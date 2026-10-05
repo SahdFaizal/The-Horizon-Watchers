@@ -1,0 +1,47 @@
+FIRE HARMONIZER - MILESTONE 1
+====================================
+
+MODE: OFFLINE
+No data was downloaded by this script.
+
+AOI:
+  (-75.0, -15.0, -50.0, 5.0)
+
+GRID:
+  5 x 5
+
+WEIGHTS:
+  MODIS = 0.5
+  VIIRS = 0.5
+
+RAW ROWS:
+  MODIS = 3,841
+  VIIRS = 15,817
+
+PROCESSED ROWS:
+  MODIS = 3,841
+  VIIRS = 15,817
+
+DAILY SECTOR ROWS:
+  MODIS = 287
+  VIIRS = 440
+
+FINAL COMMON MATRIX:
+  Rows = 775
+  Sectors = 25
+  Dates = 31
+
+OUTPUT COLUMNS:
+  - acq_date
+  - sector
+  - modis_count
+  - viirs_count
+  - modis_z
+  - viirs_z
+  - harmonized_activity
+  - sensor_discrepancy
+  - modis_frp
+  - viirs_frp
+  - total_frp
+  - modis_mean_frp
+  - viirs_mean_frp

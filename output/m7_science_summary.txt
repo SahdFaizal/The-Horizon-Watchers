@@ -1,0 +1,88 @@
+FIRE HARMONIZER - MILESTONE 7
+MULTI-EVIDENCE SCIENCE CORE
+======================================================================
+
+DATA
+Rows: 131,900
+Dates: 5,276
+Sectors: 25
+Years: 15
+Start: 2012-01-20 00:00:00
+End: 2026-06-30 00:00:00
+
+M7 EVIDENCE VECTOR
+C = count anomaly evidence
+F = FRP anomaly evidence
+G = cross-sensor concordance
+S = neighboring-sector anomaly coherence
+U = observation/sampling context fields
+
+COUNT SCORING METHODS
+m7_modis_count_method
+negative_binomial_residual    115777
+robust_empirical               16123
+
+m7_viirs_count_method
+negative_binomial_residual    125454
+robust_empirical                5486
+poisson_residual                 960
+
+FRP SCORING METHODS
+m7_modis_frp_method
+standard_z          115777
+robust_empirical     16123
+
+m7_viirs_frp_method
+standard_z          126414
+robust_empirical      5486
+
+BASELINE SUPPORT
+G / CONCORDANCE
+Mean G: 0.536562
+Median G: 0.691100
+Rows with interpretable signal strength: 84,390
+
+S / SPATIAL COHERENCE
+Mean S: 0.041819
+Median S: 0.000000
+
+U / OBSERVATION CONTEXT AVAILABILITY
+MODIS:
+  acq_time_available: True
+  cloud_available: False
+  confidence_available: True
+  daynight_available: True
+  file_available: True
+  row_data_available: True
+  scan_available: True
+  track_available: True
+  type_available: True
+  version_available: True
+VIIRS:
+  acq_time_available: True
+  cloud_available: False
+  confidence_available: True
+  daynight_available: True
+  file_available: True
+  row_data_available: True
+  scan_available: True
+  track_available: True
+  type_available: True
+  version_available: True
+
+M3 REFERENCE PRESERVATION
+Legacy M3 columns preserved: 4/4
+
+U / SENSOR STATE
+u_sensor_state
+both_sensors    84356
+viirs_only      23232
+neither         20746
+modis_only       3566
+
+SCIENTIFIC NOTES
+G is an observational concordance descriptor. It is not ground truth and does not prove that a sector-day represents a unique physical fire.
+F is standardized FRP anomaly evidence. It is not a physical energy total.
+S measures the proportion of available adjacent sectors whose M7 count evidence crosses 2.0.
+U is intentionally represented as separate context fields instead of an arbitrary composite confidence percentage.
+Missing optional fields are reported as unavailable rather than imputed.

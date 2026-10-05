@@ -1,0 +1,25 @@
+FIRE HARMONIZER - MILESTONE 10
+================================
+
+M7 input: C:\Sahd 2026 (Class 11-A)\General\The Horizon Watchers - Copy\output\harmonized_science_all_years.csv
+M8 input: C:\Sahd 2026 (Class 11-A)\General\The Horizon Watchers - Copy\output\critical_periods.csv
+
+Generated charts:
+  01_longitudinal_evidence.png
+  02_m4_vs_m8_paradigm_shift.png
+  03_concordance_breakdown.png
+  04_mega_event_lifecycle.png
+
+Generation time: 29.50 seconds
+
+Rendering:
+- Plotly template: plotly_white
+- PNG export scale: 2×
+- Plotly static export backend: Kaleido
+
+Method notes:
+- Figure 01 uses daily basin-wide means of M7 C/F/G.
+- Figure 02 reconstructs legacy M4 single-sector runs using anomaly_z when available, otherwise m7_C.
+- Figure 03 uses M7 C/F/G sector-day evidence.
+- Figure 04 reconstructs the selected M8 event from M7 nodes.
+- No external API calls or machine-learning libraries were used.

@@ -1,0 +1,37 @@
+FIRE HARMONIZER - MILESTONE 3
+====================================
+
+STUDY REGION
+Amazon Basin bounding box: (-82.0, -20.0, -44.0, 10.0)
+
+DATA SOURCES
+MODIS: MODIS_SP
+VIIRS: VIIRS_SNPP_SP
+
+PERIOD
+Start: 2012-01-20
+End: 2026-06-30
+Years: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+
+GRID
+5 x 5
+Sectors: 25
+
+HARMONIZATION
+MODIS weight: 0.5
+VIIRS weight: 0.5
+
+DATASET SIZE
+Rows: 131,900
+Dates: 5,276
+Sectors: 25
+
+SEVERITY COUNTS
+severity
+Normal      117639
+Elevated      7856
+Extreme       3274
+Unusual       3131
+
+NOTE
+The Amazon region is represented by a bounding box, not an exact hydrographic polygon. The resulting sectors therefore represent sectors of the study bounding box.

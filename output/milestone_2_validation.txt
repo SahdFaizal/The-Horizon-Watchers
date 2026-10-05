@@ -1,0 +1,49 @@
+FIRE HARMONIZER - MILESTONE 2
+====================================
+
+DATE COVERAGE
+Start: 2025-01-01 00:00:00
+End:   2025-01-31 00:00:00
+Dates: 31
+
+SECTORS
+Unique sectors: 25
+Expected matrix rows: 775
+Actual matrix rows: 775
+Complete matrix: True
+
+SENSOR OVERLAP
+total_date_sector_rows: 775
+both_detect: 249
+only_modis: 38
+only_viirs: 191
+neither_detect: 297
+both_detect_fraction: 0.32129032258064516
+only_modis_fraction: 0.04903225806451613
+only_viirs_fraction: 0.24645161290322581
+neither_fraction: 0.3832258064516129
+
+CORRELATION
+Raw count Pearson correlation: 0.773793
+Z-score Pearson correlation: 0.773793
+
+HARMONIZATION
+Mean discrepancy: 0.257102
+Median discrepancy: 0.066667
+Minimum harmonized activity: -0.304728
+Maximum harmonized activity: 13.053488
+
+MISSING VALUES
+acq_date: 0
+sector: 0
+modis_count: 0
+viirs_count: 0
+modis_z: 0
+viirs_z: 0
+harmonized_activity: 0
+sensor_discrepancy: 0
+modis_frp: 0
+viirs_frp: 0
+total_frp: 0
+modis_mean_frp: 0
+viirs_mean_frp: 0

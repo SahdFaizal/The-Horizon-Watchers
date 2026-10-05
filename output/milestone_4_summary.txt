@@ -1,0 +1,80 @@
+FIRE HARMONIZER - MILESTONE 4
+CRITICAL PERIOD DETECTION SUMMARY
+======================================================================
+
+Definition
+----------
+Critical period threshold : anomaly_z >= 2.0
+Minimum duration          : 3 consecutive calendar days
+Extreme day threshold     : anomaly_z >= 3.0
+Continuity requirement    : exactly consecutive calendar dates
+
+Input Data
+----------
+Input source : harmonized_science_all_years.csv
+Years processed : 15
+Year list       : 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026
+Sectors analyzed: 25
+Science rows    : 131,900
+Unique dates    : 5,276
+Date range      : 2012-01-20 -> 2026-06-30
+
+Critical Period Results
+-----------------------
+Critical periods detected : 530
+Extreme days inside periods: 1,767
+Longest critical period    : 29 days
+Mean critical-period length: 4.77 days
+Highest peak anomaly Z     : 172.160
+Maximum peak FRP           : 654590.690
+Mean sensor discrepancy    : 2.461
+Critical-period date range : 2012-02-01 -> 2026-06-29
+
+Critical Periods by Sector
+--------------------------
+  C01: 5
+  C02: 21
+  C03: 37
+  C04: 33
+  C05: 29
+  C06: 16
+  C07: 20
+  C08: 27
+  C09: 31
+  C10: 32
+  C11: 16
+  C12: 15
+  C13: 23
+  C14: 31
+  C15: 23
+  C16: 14
+  C17: 12
+  C18: 21
+  C19: 29
+  C20: 14
+  C21: 12
+  C22: 20
+  C23: 28
+  C24: 21
+
+Leading Sensor Component
+------------------------
+  VIIRS: 372
+  MODIS: 82
+  Balanced: 76
+
+Output Files
+------------
+Critical periods CSV:
+  C:\Sahd 2026 (Class 11-A)\General\The Horizon Watchers\output\critical_periods.csv
+Milestone 4 summary:
+  C:\Sahd 2026 (Class 11-A)\General\The Horizon Watchers\output\milestone_4_summary.txt
+
+Validation
+----------
+Duplicate date + sector rows were checked before detection.
+Critical periods require anomaly_z >= 2.
+Critical periods require at least 3 consecutive calendar days.
+Dates must differ by exactly one calendar day.
+Periods may cross December -> January when dates are truly consecutive.
+Extreme days are anomaly_z >= 3.

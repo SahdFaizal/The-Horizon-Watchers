@@ -1,0 +1,3 @@
+sensor,rows,dates,sectors,total_frp
+MODIS,3841,31,25,114894.59999999999
+VIIRS,15817,31,25,173049.6
