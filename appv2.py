@@ -535,12 +535,10 @@ def load_science() -> tuple[pd.DataFrame, str]:
             df[column] = pd.to_numeric(df[column], errors="coerce")
 
     if "u_sensor_state" not in df.columns:
-        modis_detect = (
-            pd.to_numeric(df.get("modis_count", 0), errors="coerce").fillna(0) > 0
-        )
-        viirs_detect = (
-            pd.to_numeric(df.get("viirs_count", 0), errors="coerce").fillna(0) > 0
-        )
+        modis_values = df["modis_count"] if "modis_count" in df.columns else pd.Series(0, index=df.index)
+        viirs_values = df["viirs_count"] if "viirs_count" in df.columns else pd.Series(0, index=df.index)
+        modis_detect = pd.to_numeric(modis_values, errors="coerce").fillna(0) > 0
+        viirs_detect = pd.to_numeric(viirs_values, errors="coerce").fillna(0) > 0
         df["u_sensor_state"] = np.select(
             [
                 modis_detect & viirs_detect,
@@ -988,9 +986,9 @@ def build_evidence_table(event: pd.Series, nodes: pd.DataFrame) -> pd.DataFrame:
     modis_obs = weighted_mean(nodes.get("u_modis_observation_count", pd.Series(dtype=float)))
     viirs_obs = weighted_mean(nodes.get("u_viirs_observation_count", pd.Series(dtype=float)))
     if np.isfinite(modis_obs):
-        context_parts.append(f"MODIS mean observations/node: {modis_obs:.1f}")
+        context_parts.append(f"MODIS retained context/count field mean: {modis_obs:.1f}")
     if np.isfinite(viirs_obs):
-        context_parts.append(f"VIIRS mean observations/node: {viirs_obs:.1f}")
+        context_parts.append(f"VIIRS retained context/count field mean: {viirs_obs:.1f}")
 
     modis_conf = weighted_mean(nodes.get("u_modis_mean_confidence", pd.Series(dtype=float)))
     viirs_conf = weighted_mean(nodes.get("u_viirs_mean_confidence", pd.Series(dtype=float)))
@@ -1011,36 +1009,36 @@ def build_evidence_table(event: pd.Series, nodes: pd.DataFrame) -> pd.DataFrame:
                 "Evidence dimension": "C — Activity",
                 "Observed / event value": event["peak_C"],
                 "Unit": "σ",
-                "Definition": "Peak M7 activity anomaly across qualifying event nodes.",
-                "Interpretation": "Historical unusualness of detected activity.",
+                "Definition": "Peak score showing how unusual the hotspot-detection count is versus its historical reference.",
+                "Interpretation": "Statistical unusualness, not a number of fires or direct danger rating.",
             },
             {
                 "Evidence dimension": "F — Radiative",
                 "Observed / event value": event["peak_F"],
                 "Unit": "σ",
-                "Definition": "Peak M7 FRP anomaly; FRP remains a separate power-based measurement.",
-                "Interpretation": "Historical unusualness of detected FRP.",
+                "Definition": "Peak score showing how unusual summed sector-day Fire Radiative Power (FRP) is versus its historical reference.",
+                "Interpretation": "FRP is power, not total fire energy; F can rise with detection count.",
             },
             {
                 "Evidence dimension": "G — Sensor concordance",
                 "Observed / event value": g_value,
                 "Unit": "0–1",
-                "Definition": "Bounded agreement between standardized MODIS and VIIRS activity signals.",
-                "Interpretation": concordance_label(g_value),
+                "Definition": "Bounded agreement between standardized MODIS and VIIRS count signals; G reuses count evidence also used by C.",
+                "Interpretation": concordance_label(g_value) + "; not ground truth or an independent test of fire presence",
             },
             {
                 "Evidence dimension": "S — Spatial coherence",
                 "Observed / event value": s_value,
                 "Unit": "0–1",
-                "Definition": "Proportion of valid neighboring sectors independently crossing the anomaly threshold.",
-                "Interpretation": "Regional spatial coherence of the anomaly.",
+                "Definition": "Share of available neighboring sectors also crossing the activity-anomaly threshold; derived from C, not independent confirmation.",
+                "Interpretation": "Shows neighboring-sector participation within the coarse grid; it is related to C, not independent confirmation.",
             },
             {
                 "Evidence dimension": "U — Observation context",
                 "Observed / event value": u_text,
                 "Unit": "Context",
-                "Definition": "Separate observational descriptors such as sensor state, observation support, confidence, geometry, and acquisition regime.",
-                "Interpretation": "Context for judging evidence quality; not a probability or universal confidence percentage.",
+                "Definition": "Retained context descriptors such as sensor state, associated counts, confidence, geometry, and acquisition regime where available.",
+                "Interpretation": "Context for reading the record; not a probability, overpass-opportunity measure, or universal confidence percentage.",
             },
         ]
     )
@@ -1101,28 +1099,28 @@ CALENDAR_METRICS = {
         "label": "C — Activity anomaly",
         "unit": "σ",
         "colorscale": "YlOrRd",
-        "description": "Historical unusualness of active-fire activity in each sector-day.",
+        "description": "How unusual the sector-day detection count is against its historical reference; a statistical signal, not a fire count or severity score.",
     },
     "FRP anomaly — F": {
         "column": "m7_F",
         "label": "F — FRP anomaly",
         "unit": "σ",
         "colorscale": "YlOrRd",
-        "description": "Historical unusualness of Fire Radiative Power in each sector-day.",
+        "description": "How unusual summed Fire Radiative Power is against its historical reference; FRP is power, not total fire energy.",
     },
     "Sensor concordance — G": {
         "column": "m7_G",
         "label": "G — Cross-sensor concordance",
         "unit": "0–1",
         "colorscale": "Blues",
-        "description": "Agreement between standardized MODIS and VIIRS evidence; not ground truth.",
+        "description": "Agreement between standardized MODIS and VIIRS count signals; related to C and not ground-truth confirmation.",
     },
     "Spatial coherence — S": {
         "column": "m7_S",
         "label": "S — Spatial coherence",
         "unit": "0–1",
         "colorscale": "Oranges",
-        "description": "Neighboring-sector anomaly participation.",
+        "description": "Share of neighboring sectors crossing the C threshold; derived from C, not independent confirmation.",
     },
 }
 
@@ -1534,16 +1532,47 @@ except Exception as error:
 st.markdown(
     """
     <div class="hero">
-        <div class="hero-kicker">NASA FIRMS · Amazon study region · Burning Activity Calendar</div>
+        <div class="hero-kicker">NASA FIRMS · Broad study window · Burning Activity Calendar</div>
         <div class="hero-title">Fire Harmonizer</div>
         <div class="hero-copy">
-            Harmonized MODIS + VIIRS burning activity in one calendar: inspect when and where activity was observed,
-            identify unusual periods, and then open reconstructed fire events and deeper evidence.
+            Explore NASA FIRMS hotspot detections from MODIS and Suomi NPP VIIRS in one daily calendar. Compare historical patterns across a broad study window, then inspect the evidence behind unusual periods and reconstructed event groupings.
         </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
+
+st.markdown('<div class="section-kicker">A plain-language introduction</div>', unsafe_allow_html=True)
+st.markdown(
+    """
+    NASA's Fire Information for Resource Management System (FIRMS) provides satellite active-fire hotspot detections. Fire Harmonizer brings together two sensor data streams used in the project: MODIS and the Visible Infrared Imaging Radiometer Suite (VIIRS) aboard Suomi NPP. A hotspot is a satellite detection associated with a thermal signal; it is not necessarily one unique ground fire, an exact fire boundary, or a measurement of burned area. Since MODIS and VIIRS observe with different instruments and sampling patterns, their raw detection counts are kept distinguishable and compared in historical context.
+
+    The project organizes the archive into a daily 5×5 grid over a broad geographic study window of about **14.1 million km²** (approximately 82°W–44°W and 20°S–10°N). This wide view can help the public explore historical patterns, give educators concrete examples for learning about satellites and data uncertainty, and help researchers or analysts decide which periods merit closer examination. The wide coverage is a strength for regional comparisons, but the 25 grid sectors are very large and cannot locate individual fires precisely. The app is for historical exploration and research support—not a live emergency-alert service—and an empty or missing cell does not prove that no burning occurred.
+    """
+)
+
+with st.expander("What the scientific terms mean", expanded=True):
+    st.markdown(
+        """
+        **Hotspot detection (NASA FIRMS):** a satellite-reported location with a thermal signal consistent with active burning under the product's detection rules. It is evidence to investigate, not a guaranteed unique fire or a fire perimeter.
+
+        **MODIS and VIIRS:** the two satellite-instrument data streams being compared. They differ in sensor design and sampling, so one sensor's raw count should not simply be treated as equal to the other's. In this project, VIIRS is from Suomi NPP.
+
+        **C — Activity anomaly:** how unusual the sector-day's hotspot-detection count is compared with its historical reference. The “σ” symbol means standard deviations on a standardized scale. C is a measure of statistical unusualness, not the number of fires, a burned-area estimate, or a direct measure of danger. Very sparse or near-zero-variance reference data can produce extreme scores, so inspect the underlying context.
+
+        **F — FRP anomaly:** how unusual the summed Fire Radiative Power (FRP) is for a sector-day compared with its reference. FRP describes the rate of radiative energy release (power), not the total energy released over an entire fire. Summed FRP can rise simply because more detections were recorded, so F is related to—but not identical to—C.
+
+        **G — Cross-sensor concordance:** how closely the standardized MODIS and VIIRS count signals align. Higher G indicates closer agreement in those signals; it is not a probability that a fire is real or ground-truth confirmation. G reuses count-score information that also contributes to C, so it is not an independent test.
+
+        **S — Spatial coherence / adjacent-sector support:** how much neighboring grid sectors also cross the activity-anomaly threshold. It helps show whether unusual values are spatially clustered, but it is derived from C and is not independent confirmation. “Spatial” here refers to the project's coarse grid, not precise fire coordinates.
+
+        **U — Observation context:** retained descriptors such as sensor state, associated counts, confidence, viewing geometry, or daytime context where available. These can help interpret the data's limitations, but U is not a universal confidence percentage and the sensor-state flag does not establish whether a satellite had an overpass opportunity. No recorded detection does not prove no burning.
+
+        **M8 reconstructed event:** a statistical grouping of qualifying sector-days connected through the project's time-and-neighbor rules. It is an analytical event structure, not a verified individual fire, burn scar, fire perimeter, or official incident declaration.
+
+        **Historical monitoring signal:** a way to prioritize questions about past records. The baseline can include later dates than the event being viewed, so this archive should not be presented as a real-time or forecast system.
+        """
+    )
 
 
 # ============================================================
@@ -1579,12 +1608,12 @@ with calendar_controls[1]:
         "Calendar metric",
         list(CALENDAR_METRICS.keys()),
         index=0,
-        help="C is the primary activity-anomaly view. F, G, and S expose independent evidence dimensions.",
+        help="C is the primary activity-anomaly view. F, G, and S show related evidence dimensions; G and S are not independent confirmation.",
     )
 
 with calendar_controls[2]:
     st.markdown(
-        '<div class="context-box"><strong>Early-warning / monitoring role</strong><br>Use the calendar to focus attention on unusual activity and historically persistent periods. The current application is a historical scientific decision-support interface, not a certified live emergency-alert service.</div>',
+        '<div class="context-box"><strong>Historical monitoring role</strong><br>Use the calendar to focus attention on unusual activity and historically persistent periods. The application is for historical scientific review and research support, not a certified live emergency-alert service.</div>',
         unsafe_allow_html=True,
     )
 
@@ -1637,7 +1666,7 @@ with s4:
 
 st.caption(
     CALENDAR_METRICS[calendar_metric]["description"]
-    + " Missing dates are preserved as missing rather than silently converted to zeros."
+    + " Missing values are left missing where the source table has no value; a missing cell is not proof that no burning occurred."
 )
 
 
@@ -1990,10 +2019,12 @@ else:
             """
             <div class="context-box">
                 <strong>U is context, not a confidence score.</strong><br>
-                Sensor support, observation counts, detection confidence,
-                geometry, acquisition regime, and related descriptors remain
-                separate from C, F, G, and S rather than being collapsed into
-                an arbitrary probability.
+                Retained sensor-state flags and available counts, detection
+                confidence, viewing geometry, and acquisition descriptors can
+                help interpret the record. They do not establish satellite
+                overpass opportunity or prove that no burning occurred. U is
+                kept separate from C, F, G, and S rather than being turned
+                into an arbitrary probability.
             </div>
             """,
             unsafe_allow_html=True,
@@ -2034,14 +2065,14 @@ else:
                 )
 
             add_context_row(
-                "MODIS observations/node",
-                "Mean retained MODIS observation count supporting event nodes.",
+                "MODIS retained count/context per node",
+                "Mean retained MODIS context/count field at qualifying event nodes; not a measure of overpass opportunity.",
                 event_nodes.get("u_modis_observation_count"),
                 decimals=1,
             )
             add_context_row(
-                "VIIRS observations/node",
-                "Mean retained VIIRS observation count supporting event nodes.",
+                "VIIRS retained count/context per node",
+                "Mean retained VIIRS context/count field at qualifying event nodes; not a measure of overpass opportunity.",
                 event_nodes.get("u_viirs_observation_count"),
                 decimals=1,
             )
@@ -2117,17 +2148,17 @@ else:
 with st.expander("How to interpret Fire Harmonizer", expanded=False):
     st.markdown(
         """
-        **C — Activity anomaly:** historical unusualness of detected activity.
+        **C — Activity anomaly:** how unusual the detected-hotspot count is against its historical reference. The score is not a number of fires or a direct danger rating.
 
-        **F — Radiative anomaly:** historical unusualness of detected FRP; FRP is power, not total fire energy.
+        **F — FRP anomaly:** how unusual summed Fire Radiative Power is against its historical reference. FRP is power, not total fire energy, and can rise with the number of detections.
 
-        **G — Cross-sensor concordance:** agreement between standardized MODIS and VIIRS activity signals. It is not ground truth or a probability.
+        **G — Cross-sensor concordance:** agreement between standardized MODIS and VIIRS count signals. It reuses count information behind C, so it is not independent confirmation, ground truth, or a probability.
 
-        **S — Spatial coherence:** neighboring-sector participation in the anomaly.
+        **S — Spatial coherence:** neighboring sectors also crossing the C threshold. S is derived from C and is not independent confirmation.
 
-        **U — Observation context:** retained sensor and observation descriptors kept separate from the numerical evidence dimensions.
+        **U — Observation context:** retained descriptors such as sensor state, associated counts, confidence, and viewing context where available. It is not a confidence percentage or measure of satellite overpass opportunity.
 
-        **M8 reconstructed events:** connected event structures derived from DATE × SECTOR anomaly nodes. They are observational/statistical constructs, not guaranteed ground-truth fire perimeters or emergency declarations.
+        **M8 reconstructed events:** connected DATE × SECTOR anomaly nodes. They are analytical groupings, not verified fires, ground-truth perimeters, or emergency declarations. The historical baseline can include later dates, so outputs are not real-time warnings.
         """
     )
 
@@ -2180,5 +2211,4 @@ with st.expander("M10 Static Scientific Plates", expanded=False):
                     st.image(str(image_path), use_container_width=True)
                 else:
                     st.info(f"Pre-generated plate not found: {filename}")
-
 
