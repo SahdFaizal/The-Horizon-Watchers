@@ -1589,7 +1589,7 @@ default_year = 2026 if 2026 in years else years[-1]
 
 st.markdown('<div class="section-kicker">Burning Activity Calendar</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="section-description">This is the challenge-facing view: a harmonized day-by-sector calendar showing when and where satellite-observed burning activity occurs. Blank cells mean no stored observation record for that sector-day; they are not proof of zero burning.</div>',
+    '<div class="section-description">Cells show sector-day count-anomaly scores from the populated daily matrix. Zero-filled counts are model inputs and do not serve as proof that no burning occurred.   </div>',
     unsafe_allow_html=True,
 )
 
