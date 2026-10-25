@@ -1,3 +1,14 @@
+
+import sys
+import importlib.metadata as metadata
+import streamlit as st
+
+st.write("Python:", sys.version)
+for package in ("streamlit", "altair", "typing_extensions"):
+    try:
+        st.write(f"{package}: {metadata.version(package)}")
+    except metadata.PackageNotFoundError:
+        st.write(f"{package}: not installed")
 """
 FIRE HARMONIZER — PROGRESSIVE DISCLOSURE DASHBOARD
 ==================================================
