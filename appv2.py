@@ -27,6 +27,7 @@ with generate_charts.py.
 from __future__ import annotations
 
 from pathlib import Path
+import html
 from typing import Iterable
 
 import numpy as np
@@ -389,6 +390,397 @@ st.markdown(
 
 
 # ============================================================
+# ACCESSIBLE STREAMLIT WIDGET STYLING — CONTRAST OVERRIDES
+# ============================================================
+
+# These overrides intentionally follow the original theme CSS so that control
+# states remain readable when Streamlit's active theme or BaseWeb defaults vary.
+st.markdown(
+    r"""
+    <style>
+        :root {
+            --fh-bg: #f8fafc;
+            --fh-surface: #ffffff;
+            --fh-text: #0f172a;
+            --fh-muted: #475569;
+            --fh-border: #cbd5e1;
+            --fh-accent: #c2410c;
+            --fh-accent-hover: #9a3412;
+            --fh-accent-soft: #fff7ed;
+            --fh-accent-selected: #ffedd5;
+            --fh-focus: rgba(234, 88, 12, 0.24);
+        }
+
+        /* Explicitly keep the dashboard surface light and the default text dark. */
+        .stApp,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"],
+        [data-testid="stMainBlockContainer"] {
+            background: var(--fh-bg) !important;
+            color: var(--fh-text) !important;
+        }
+
+        .stApp p,
+        .stApp li,
+        .stApp label,
+        .stApp legend,
+        .stApp [data-testid="stMarkdownContainer"],
+        .stApp [data-testid="stWidgetLabel"],
+        .stApp [data-testid="stCaptionContainer"] {
+            color: var(--fh-text);
+        }
+
+        .stApp [data-testid="stCaptionContainer"] p,
+        .stApp small {
+            color: var(--fh-muted) !important;
+        }
+
+        .stApp a {
+            color: var(--fh-accent-hover) !important;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
+        }
+        .stApp a:hover {
+            color: #7c2d12 !important;
+        }
+
+        /* Selectbox and multiselect trigger: white surface, legible text. */
+        div[data-testid="stSelectbox"] label,
+        div[data-testid="stMultiSelect"] label,
+        div[data-testid="stDateInput"] label,
+        div[data-testid="stTimeInput"] label,
+        div[data-testid="stTextInput"] label,
+        div[data-testid="stNumberInput"] label,
+        div[data-testid="stSlider"] label {
+            color: var(--fh-text) !important;
+            font-weight: 650 !important;
+        }
+
+        div[data-testid="stSelectbox"] [data-baseweb="select"] > div,
+        div[data-testid="stMultiSelect"] [data-baseweb="select"] > div {
+            background-color: #ffffff !important;
+            border-color: var(--fh-border) !important;
+            color: var(--fh-text) !important;
+            border-radius: 10px !important;
+        }
+
+        div[data-testid="stSelectbox"] [data-baseweb="select"] *,
+        div[data-testid="stMultiSelect"] [data-baseweb="select"] * {
+            color: var(--fh-text) !important;
+        }
+
+        /* Dropdown popovers and menu options (where the black-text issue often appears). */
+        div[data-baseweb="popover"],
+        div[data-baseweb="menu"],
+        div[data-baseweb="popover"] > div,
+        ul[role="listbox"] {
+            background-color: #ffffff !important;
+            color: var(--fh-text) !important;
+            border-color: var(--fh-border) !important;
+        }
+
+        [role="option"] {
+            background-color: #ffffff !important;
+            color: var(--fh-text) !important;
+        }
+        [role="option"] * {
+            color: inherit !important;
+        }
+        [role="option"]:hover,
+        [role="option"][data-highlighted="true"] {
+            background-color: var(--fh-accent-soft) !important;
+            color: var(--fh-accent-hover) !important;
+        }
+        [role="option"][aria-selected="true"] {
+            background-color: var(--fh-accent-selected) !important;
+            color: var(--fh-accent-hover) !important;
+            font-weight: 650 !important;
+        }
+
+        /* Standard action buttons remain white/dark for a calm control surface. */
+        div[data-testid="stButton"] button,
+        div[data-testid="stDownloadButton"] button,
+        div[data-testid="stFormSubmitButton"] button {
+            background-color: #ffffff !important;
+            color: var(--fh-text) !important;
+            border: 1px solid var(--fh-border) !important;
+            border-radius: 10px !important;
+            font-weight: 650 !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            transition: background-color 0.15s ease, border-color 0.15s ease,
+                        color 0.15s ease, transform 0.15s ease;
+        }
+        div[data-testid="stButton"] button *,
+        div[data-testid="stDownloadButton"] button *,
+        div[data-testid="stFormSubmitButton"] button * {
+            color: inherit !important;
+        }
+        div[data-testid="stButton"] button:hover,
+        div[data-testid="stDownloadButton"] button:hover,
+        div[data-testid="stFormSubmitButton"] button:hover {
+            background-color: var(--fh-accent-soft) !important;
+            color: var(--fh-accent-hover) !important;
+            border-color: #fdba74 !important;
+            transform: translateY(-1px);
+        }
+
+        /* Explicit primary-button variant, if the app adds one later. */
+        div[data-testid="stButton"] button[kind="primary"],
+        div[data-testid="stDownloadButton"] button[kind="primary"],
+        div[data-testid="stFormSubmitButton"] button[kind="primary"],
+        div[data-testid="stButton"] button[data-testid="stBaseButton-primary"] {
+            background-color: var(--fh-accent) !important;
+            color: #ffffff !important;
+            border-color: var(--fh-accent) !important;
+        }
+        div[data-testid="stButton"] button[kind="primary"] *,
+        div[data-testid="stButton"] button[data-testid="stBaseButton-primary"] * {
+            color: #ffffff !important;
+        }
+        div[data-testid="stButton"] button[kind="primary"]:hover,
+        div[data-testid="stButton"] button[data-testid="stBaseButton-primary"]:hover {
+            background-color: var(--fh-accent-hover) !important;
+            border-color: var(--fh-accent-hover) !important;
+        }
+
+        /* Text, number, date, time and multiline inputs. */
+        div[data-testid="stTextInput"] input,
+        div[data-testid="stNumberInput"] input,
+        div[data-testid="stDateInput"] input,
+        div[data-testid="stTimeInput"] input,
+        div[data-testid="stTextArea"] textarea {
+            background-color: #ffffff !important;
+            color: var(--fh-text) !important;
+            -webkit-text-fill-color: var(--fh-text) !important;
+            border: 1px solid var(--fh-border) !important;
+            border-radius: 9px !important;
+        }
+        div[data-testid="stTextInput"] input::placeholder,
+        div[data-testid="stTextArea"] textarea::placeholder {
+            color: #64748b !important;
+            -webkit-text-fill-color: #64748b !important;
+            opacity: 1 !important;
+        }
+        div[data-testid="stTextInput"] input:focus,
+        div[data-testid="stNumberInput"] input:focus,
+        div[data-testid="stDateInput"] input:focus,
+        div[data-testid="stTimeInput"] input:focus,
+        div[data-testid="stTextArea"] textarea:focus {
+            border-color: var(--fh-accent) !important;
+            box-shadow: 0 0 0 3px var(--fh-focus) !important;
+        }
+
+        /* Number-input +/- buttons. */
+        div[data-testid="stNumberInput"] button {
+            background-color: var(--fh-accent-soft) !important;
+            color: var(--fh-accent-hover) !important;
+            border-color: var(--fh-border) !important;
+        }
+        div[data-testid="stNumberInput"] button svg {
+            color: var(--fh-accent-hover) !important;
+            fill: currentColor !important;
+        }
+
+        /* Checkbox, radio and toggle copy. */
+        div[data-testid="stCheckbox"] label,
+        div[data-testid="stRadio"] label,
+        div[data-testid="stToggle"] label,
+        div[data-testid="stCheckbox"] label *,
+        div[data-testid="stRadio"] label *,
+        div[data-testid="stToggle"] label * {
+            color: var(--fh-text) !important;
+        }
+        div[data-testid="stCheckbox"] input,
+        div[data-testid="stRadio"] input {
+            accent-color: var(--fh-accent) !important;
+        }
+
+        /* Slider thumb, track, labels and values. */
+        div[data-testid="stSlider"] [role="slider"] {
+            background-color: var(--fh-accent) !important;
+            border-color: #ffffff !important;
+            box-shadow: 0 0 0 2px var(--fh-accent) !important;
+        }
+        div[data-testid="stSlider"] [data-baseweb="slider"] > div > div {
+            background-color: var(--fh-accent) !important;
+        }
+        div[data-testid="stSlider"] [data-testid="stThumbValue"],
+        div[data-testid="stSlider"] [data-testid="stMarkdownContainer"] {
+            color: var(--fh-text) !important;
+        }
+
+        /* Expander headers, body and disclosure icons. */
+        div[data-testid="stExpander"] {
+            background-color: #ffffff !important;
+            border: 1px solid var(--fh-border) !important;
+            border-radius: 12px !important;
+            overflow: hidden;
+        }
+        div[data-testid="stExpander"] summary,
+        div[data-testid="stExpander"] summary * {
+            color: var(--fh-text) !important;
+        }
+        div[data-testid="stExpander"] summary:hover {
+            background-color: var(--fh-accent-soft) !important;
+        }
+        div[data-testid="stExpander"] summary svg {
+            color: var(--fh-text) !important;
+            fill: currentColor !important;
+        }
+        div[data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+            background-color: #ffffff !important;
+            color: var(--fh-text) !important;
+        }
+
+        /* Tabs: clearly distinguish inactive and active states. */
+        div[data-testid="stTabs"] [role="tablist"] {
+            gap: 0.35rem;
+            border-bottom: 1px solid var(--fh-border) !important;
+        }
+        div[data-testid="stTabs"] button[role="tab"] {
+            color: var(--fh-muted) !important;
+            background-color: transparent !important;
+            border: 1px solid transparent !important;
+            border-bottom: 2px solid transparent !important;
+            border-radius: 10px 10px 0 0;
+            font-weight: 700 !important;
+        }
+        div[data-testid="stTabs"] button[role="tab"] * {
+            color: inherit !important;
+        }
+        div[data-testid="stTabs"] button[role="tab"]:hover {
+            background-color: var(--fh-accent-soft) !important;
+            color: var(--fh-accent-hover) !important;
+        }
+        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+            background-color: var(--fh-accent-selected) !important;
+            color: var(--fh-accent-hover) !important;
+            border-color: #fed7aa !important;
+            border-bottom-color: var(--fh-accent) !important;
+        }
+        div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+            background-color: var(--fh-accent) !important;
+        }
+
+        /* Segmented controls, if used in a future version of the app. */
+        div[data-testid="stSegmentedControl"] button {
+            background-color: #ffffff !important;
+            color: var(--fh-text) !important;
+            border-color: var(--fh-border) !important;
+        }
+        div[data-testid="stSegmentedControl"] button[aria-pressed="true"] {
+            background-color: var(--fh-accent-selected) !important;
+            color: var(--fh-accent-hover) !important;
+            border-color: #fdba74 !important;
+        }
+
+        /* Metrics, tables and alerts should retain high contrast. */
+        div[data-testid="stMetric"] label,
+        div[data-testid="stMetric"] [data-testid="stMetricValue"],
+        div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
+            color: var(--fh-text) !important;
+        }
+        div[data-testid="stDataFrame"] {
+            background-color: #ffffff !important;
+            border: 1px solid var(--fh-border) !important;
+            border-radius: 12px !important;
+            overflow: hidden;
+        }
+        div[data-testid="stAlert"] {
+            border-radius: 10px;
+        }
+
+        /* Strong, visible keyboard focus for interactive controls. */
+        .stApp button:focus-visible,
+        .stApp input:focus-visible,
+        .stApp textarea:focus-visible,
+        .stApp [role="combobox"]:focus-visible,
+        .stApp [role="slider"]:focus-visible,
+        .stApp [role="tab"]:focus-visible {
+            outline: 3px solid var(--fh-focus) !important;
+            outline-offset: 2px !important;
+        }
+
+        /* Disabled controls remain legible instead of becoming black-on-black. */
+        .stApp button:disabled,
+        .stApp input:disabled,
+        .stApp textarea:disabled {
+            opacity: 0.72 !important;
+            cursor: not-allowed !important;
+        }
+    
+
+        /* FINAL FIX: scientific-terms expander header contrast.
+           Use the testid without assuming its host element is a div. */
+        .stApp [data-testid="stExpander"],
+        .stApp [data-testid="stExpander"] details,
+        .stApp details[data-testid="stExpander"] {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        .stApp [data-testid="stExpander"] summary,
+        .stApp [data-testid="stExpander"] summary:hover,
+        .stApp [data-testid="stExpander"] summary:focus,
+        .stApp [data-testid="stExpander"] summary:focus-visible,
+        .stApp [data-testid="stExpander"] summary:active,
+        .stApp details[data-testid="stExpander"] > summary,
+        .stApp details[data-testid="stExpander"] > summary:hover {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            opacity: 1 !important;
+            box-shadow: none !important;
+        }
+
+        .stApp [data-testid="stExpander"] summary *,
+        .stApp [data-testid="stExpander"] summary p,
+        .stApp [data-testid="stExpander"] summary span,
+        .stApp [data-testid="stExpander"] summary div,
+        .stApp [data-testid="stExpander"] summary label,
+        .stApp details[data-testid="stExpander"] > summary * {
+            background-color: transparent !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            opacity: 1 !important;
+        }
+
+        .stApp [data-testid="stExpander"] summary svg,
+        .stApp [data-testid="stExpander"] summary svg * {
+            color: #0f172a !important;
+            fill: #0f172a !important;
+            stroke: #0f172a !important;
+            opacity: 1 !important;
+        }
+
+        .stApp [data-testid="stExpander"] summary:hover,
+        .stApp details[data-testid="stExpander"] > summary:hover {
+            background: #fff7ed !important;
+            background-color: #fff7ed !important;
+            cursor: pointer;
+        }
+
+        .stApp [data-testid="stExpander"] summary:focus-visible,
+        .stApp details[data-testid="stExpander"] > summary:focus-visible {
+            outline: 3px solid rgba(234, 88, 12, 0.30) !important;
+            outline-offset: -3px !important;
+        }
+
+        .stApp [data-testid="stExpander"] [data-testid="stExpanderDetails"],
+        .stApp [data-testid="stExpander"] [data-testid="stExpanderDetails"] * {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+        }
+
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ============================================================
 # BASIC HELPERS
 # ============================================================
 
@@ -468,6 +860,63 @@ def concordance_label(value: float | int | None) -> str:
 def weighted_mean(values: pd.Series) -> float:
     numeric = pd.to_numeric(values, errors="coerce").dropna()
     return float(numeric.mean()) if not numeric.empty else np.nan
+
+
+def render_readable_html_table(frame: pd.DataFrame, max_rows: int | None = None) -> str:
+    """Render a compact, high-contrast HTML table for public-facing outputs.
+
+    This avoids embedded grid theme mismatches where the table background and
+    text colors can become unreadable under a host's Streamlit theme.
+    All cell content is HTML-escaped because values come from CSV/JSON files.
+    """
+    if frame is None or frame.empty:
+        return (
+            '<div style="padding:0.9rem;border:1px solid #cbd5e1;border-radius:10px;'
+            'background:#ffffff;color:#475569;">No rows are available.</div>'
+        )
+
+    shown = frame.copy()
+    if max_rows is not None:
+        shown = shown.head(max_rows)
+
+    table_style = (
+        'width:100%;border-collapse:collapse;background:#ffffff;color:#0f172a;'
+        'font-size:0.88rem;line-height:1.45;'
+    )
+    head_style = (
+        'text-align:left;padding:0.65rem 0.75rem;background:#fff7ed;color:#9a3412;'
+        'border:1px solid #fed7aa;font-weight:750;white-space:nowrap;'
+    )
+    cell_style = (
+        'text-align:left;padding:0.58rem 0.75rem;color:#0f172a;'
+        'border:1px solid #e2e8f0;vertical-align:top;'
+    )
+    parts = [
+        '<div style="overflow-x:auto;width:100%;background:#ffffff;border:1px solid #cbd5e1;'
+        'border-radius:11px;margin:0.35rem 0 0.8rem 0;">',
+        f'<table style="{table_style}"><thead><tr>',
+    ]
+    for column in shown.columns:
+        parts.append(f'<th style="{head_style}">{html.escape(str(column))}</th>')
+    parts.append('</tr></thead><tbody>')
+    for row_index, (_, row) in enumerate(shown.iterrows()):
+        row_bg = '#ffffff' if row_index % 2 == 0 else '#f8fafc'
+        parts.append('<tr>')
+        for value in row.tolist():
+            if value is None or (isinstance(value, float) and not np.isfinite(value)):
+                display = '—'
+            else:
+                display = str(value)
+            parts.append(
+                f'<td style="{cell_style}background:{row_bg};">{html.escape(display)}</td>'
+            )
+        parts.append('</tr>')
+    parts.append('</tbody></table></div>')
+    if max_rows is not None and len(frame) > max_rows:
+        parts.append(
+            f'<div style="color:#475569;font-size:0.8rem;">Showing {max_rows} of {len(frame)} rows.</div>'
+        )
+    return ''.join(parts)
 
 
 def find_chart_directory() -> Path | None:
@@ -1575,6 +2024,49 @@ with st.expander("What the scientific terms mean", expanded=True):
     )
 
 
+with st.expander("5×5 sector geography reference", expanded=False):
+    st.markdown(
+        """
+        Use this reference to interpret the project's C01–C25 grid labels. Bounds and centres describe the rectangular analysis grid, while the geographic descriptions are approximate orientation aids—not official administrative boundaries or a precise Amazon biome mask. Several western cells include Pacific Ocean and Andean areas; eastern and southern cells include areas outside the Amazon rainforest, including parts of the Cerrado and Pantanal.
+        """
+    )
+    sector_geography = pd.DataFrame([
+        {"Sector": "C01", "Latitude bounds": "4°N–10°N", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "7°N, 78.2°W", "Approximate geographic region": "Pacific-facing western Colombia and adjacent Pacific Ocean"},
+        {"Sector": "C02", "Latitude bounds": "4°N–10°N", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "7°N, 70.6°W", "Approximate geographic region": "Northern Colombia and western Venezuela"},
+        {"Sector": "C03", "Latitude bounds": "4°N–10°N", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "7°N, 63.0°W", "Approximate geographic region": "Eastern Venezuela and western Guiana Shield"},
+        {"Sector": "C04", "Latitude bounds": "4°N–10°N", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "7°N, 55.4°W", "Approximate geographic region": "Guyana, Suriname and French Guiana"},
+        {"Sector": "C05", "Latitude bounds": "4°N–10°N", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "7°N, 47.8°W", "Approximate geographic region": "Amapá and far northern Brazil, adjoining Atlantic coast"},
+        {"Sector": "C06", "Latitude bounds": "2°S–4°N", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "1°N, 78.2°W", "Approximate geographic region": "Southern Colombia, Ecuador and western Andean foothills"},
+        {"Sector": "C07", "Latitude bounds": "2°S–4°N", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "1°N, 70.6°W", "Approximate geographic region": "Central and southern Colombia and adjoining Amazon borderlands"},
+        {"Sector": "C08", "Latitude bounds": "2°S–4°N", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "1°N, 63.0°W", "Approximate geographic region": "Eastern Colombia, southern Venezuela and northwestern Amazonia"},
+        {"Sector": "C09", "Latitude bounds": "2°S–4°N", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "1°N, 55.4°W", "Approximate geographic region": "Guianas and northern Brazil"},
+        {"Sector": "C10", "Latitude bounds": "2°S–4°N", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "1°N, 47.8°W", "Approximate geographic region": "Amapá, northern Pará and the lower Amazon region"},
+        {"Sector": "C11", "Latitude bounds": "8°S–2°S", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "5°S, 78.2°W", "Approximate geographic region": "Pacific-facing Peru, western Andes and adjacent Pacific Ocean"},
+        {"Sector": "C12", "Latitude bounds": "8°S–2°S", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "5°S, 70.6°W", "Approximate geographic region": "Peruvian Amazon and western Amazon borderlands of Bolivia"},
+        {"Sector": "C13", "Latitude bounds": "8°S–2°S", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "5°S, 63.0°W", "Approximate geographic region": "Southwestern Amazonia, including northern Bolivia and western Brazil"},
+        {"Sector": "C14", "Latitude bounds": "8°S–2°S", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "5°S, 55.4°W", "Approximate geographic region": "Central and southern Amazon region, west-central Brazil"},
+        {"Sector": "C15", "Latitude bounds": "8°S–2°S", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "5°S, 47.8°W", "Approximate geographic region": "Eastern Amazonia and the Pará–Tocantins transition"},
+        {"Sector": "C16", "Latitude bounds": "14°S–8°S", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "11°S, 78.2°W", "Approximate geographic region": "Southern Peru's Pacific coast, western Andes and adjacent Pacific Ocean"},
+        {"Sector": "C17", "Latitude bounds": "14°S–8°S", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "11°S, 70.6°W", "Approximate geographic region": "Southern Peru and western Bolivia"},
+        {"Sector": "C18", "Latitude bounds": "14°S–8°S", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "11°S, 63.0°W", "Approximate geographic region": "Bolivian lowlands and southwestern Brazilian Amazonia"},
+        {"Sector": "C19", "Latitude bounds": "14°S–8°S", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "11°S, 55.4°W", "Approximate geographic region": "West-central Brazil and the southern Amazon–Cerrado transition"},
+        {"Sector": "C20", "Latitude bounds": "14°S–8°S", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "11°S, 47.8°W", "Approximate geographic region": "Central Brazil, including parts of the Cerrado and Tocantins–Goiás region"},
+        {"Sector": "C21", "Latitude bounds": "20°S–14°S", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "17°S, 78.2°W", "Approximate geographic region": "Southern Peru, western Andes and adjacent Pacific Ocean"},
+        {"Sector": "C22", "Latitude bounds": "20°S–14°S", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "17°S, 70.6°W", "Approximate geographic region": "Southern Peru and western to central Bolivia"},
+        {"Sector": "C23", "Latitude bounds": "20°S–14°S", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "17°S, 63.0°W", "Approximate geographic region": "Eastern Bolivia and southwestern Brazil"},
+        {"Sector": "C24", "Latitude bounds": "20°S–14°S", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "17°S, 55.4°W", "Approximate geographic region": "South-central Brazil, including the Pantanal and Cerrado transition"},
+        {"Sector": "C25", "Latitude bounds": "20°S–14°S", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "17°S, 47.8°W", "Approximate geographic region": "Central-eastern Brazil, including the Cerrado and Brazilian Highlands"},
+    ])
+    # Use a plain HTML table here rather than Streamlit's dataframe grid.
+    # This avoids a blank/unreadable grid when the host theme or injected CSS
+    # conflicts with the interactive dataframe renderer.
+    st.markdown(
+        render_readable_html_table(sector_geography),
+        unsafe_allow_html=True,
+    )
+    st.caption("Grid sectors are rectangular analytical bins. Their geographic labels are approximate; the grid is not a precise fire-location layer or an official biome boundary.")
+
+
 # ============================================================
 # STEP 1 — BURNING ACTIVITY CALENDAR
 # ============================================================
@@ -1589,7 +2081,7 @@ default_year = 2026 if 2026 in years else years[-1]
 
 st.markdown('<div class="section-kicker">Burning Activity Calendar</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="section-description">Cells show sector-day count-anomaly scores from the populated daily matrix. Zero-filled counts are model inputs and do not serve as proof that no burning occurred.   </div>',
+    '<div class="section-description">This is the challenge-facing view: a harmonized day-by-sector calendar showing when and where satellite-observed burning activity occurs. Blank cells mean no stored observation record for that sector-day; they are not proof of zero burning.</div>',
     unsafe_allow_html=True,
 )
 
@@ -2173,6 +2665,238 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
+# ============================================================
+# OPTIONAL — LIGHTWEIGHT NEAR-TERM ACTIVITY WATCHLIST
+# ============================================================
+
+st.markdown('<div class="section-kicker">Near-term activity watchlist</div>', unsafe_allow_html=True)
+with st.expander("Experimental 7-day activity watchlist", expanded=False):
+    watchlist_candidates = [
+        BASE_DIR / "output" / "model" / "next7d_watchlist.csv",
+        BASE_DIR / "data" / "output" / "model" / "next7d_watchlist.csv",
+    ]
+    metrics_candidates = [
+        BASE_DIR / "output" / "model" / "model_metrics.json",
+        BASE_DIR / "data" / "output" / "model" / "model_metrics.json",
+    ]
+    watchlist_path = next((p for p in watchlist_candidates if p.exists()), None)
+    metrics_path = next((p for p in metrics_candidates if p.exists()), None)
+
+    st.caption(
+        "Optional add-on. It ranks sectors by a lightweight model or persistence baseline, "
+        "selected using a chronological validation period. The score is not a probability."
+    )
+    if watchlist_path is None:
+        st.info(
+            "No model output found yet. From the project root, run:\n\n"
+            "`python fire_harmonizer_light_model.py --science output/harmonized_science_all_years.csv --output-dir output/model --horizon 7`"
+        )
+    else:
+        try:
+            watch_df = pd.read_csv(watchlist_path, low_memory=False)
+            if watch_df.empty:
+                st.warning("The saved watchlist is empty. Re-run the model to create sector scores.")
+            else:
+                as_of = str(watch_df.iloc[0].get("as_of_date", "unknown"))
+                forecast_start = str(watch_df.iloc[0].get("forecast_start", "unknown"))
+                forecast_end = str(watch_df.iloc[0].get("forecast_end", "unknown"))
+                selected_method = str(watch_df.iloc[0].get("selected_method", "unknown"))
+                k1, k2, k3, k4 = st.columns(4)
+                k1.metric("Data available through", as_of)
+                k2.metric("Forecast window begins", forecast_start)
+                k3.metric("Forecast window ends", forecast_end)
+                k4.metric(
+                    "Selected approach",
+                    "ML" if selected_method == "hist_gradient_boosting" else (
+                        "Persistence" if selected_method == "persistence_baseline" else selected_method
+                    ),
+                )
+
+                # Normalize the watchlist columns and render a high-contrast table.
+                # The chart can work while a themed dataframe grid appears blank, so
+                # this table uses explicit white backgrounds and dark text.
+                required_watch_columns = {"sector", "model_score"}
+                missing_watch_columns = required_watch_columns - set(watch_df.columns)
+                if missing_watch_columns:
+                    st.error(
+                        "The watchlist CSV is missing required columns: "
+                        + ", ".join(sorted(missing_watch_columns))
+                        + f". File loaded: {watchlist_path}"
+                    )
+                    st.caption("Available columns: " + ", ".join(map(str, watch_df.columns)))
+                else:
+                    watch_display = watch_df.copy()
+                    if "rank" not in watch_display.columns:
+                        watch_display["rank"] = np.arange(1, len(watch_display) + 1)
+                    if "watchlist_flag" not in watch_display.columns:
+                        watch_display["watchlist_flag"] = np.nan
+                    if "selected_method" not in watch_display.columns:
+                        watch_display["selected_method"] = selected_method
+                    watch_display["rank"] = pd.to_numeric(watch_display["rank"], errors="coerce")
+                    watch_display["model_score"] = pd.to_numeric(watch_display["model_score"], errors="coerce")
+                    watch_display["watchlist_flag"] = pd.to_numeric(
+                        watch_display["watchlist_flag"], errors="coerce"
+                    )
+                    watch_display = watch_display.sort_values(
+                        ["rank", "sector"], ascending=[True, True], na_position="last"
+                    )
+                    watch_display["rank"] = watch_display["rank"].apply(
+                        lambda x: str(int(x)) if pd.notna(x) else "—"
+                    )
+                    watch_display["model_score"] = watch_display["model_score"].apply(
+                        lambda x: f"{x:.4f}" if pd.notna(x) else "—"
+                    )
+                    watch_display["watchlist_flag"] = watch_display["watchlist_flag"].map(
+                        lambda x: ("Above threshold" if x == 1 else "Below threshold" if x == 0 else "—")
+                    )
+                    watch_display["selected_method"] = watch_display["selected_method"].map(
+                        lambda x: (
+                            "ML" if str(x) == "hist_gradient_boosting" else
+                            "Persistence" if str(x) == "persistence_baseline" else str(x)
+                        )
+                    )
+                    watch_display = watch_display[
+                        ["rank", "sector", "model_score", "watchlist_flag", "selected_method"]
+                    ].rename(
+                        columns={
+                            "rank": "Rank",
+                            "sector": "Sector",
+                            "model_score": "Ranking score (not probability)",
+                            "watchlist_flag": "Validation-threshold flag",
+                            "selected_method": "Selected approach",
+                        }
+                    )
+                    st.markdown(render_readable_html_table(watch_display), unsafe_allow_html=True)
+
+                    chart_source = watch_df.copy()
+                    chart_source["model_score"] = pd.to_numeric(chart_source["model_score"], errors="coerce")
+                    chart_source = chart_source.dropna(subset=["model_score"])
+                    if chart_source.empty:
+                        st.info("The watchlist contains no numeric scores to plot.")
+                    else:
+                        plot_df = chart_source.sort_values("model_score", ascending=True).set_index("sector")[
+                            ["model_score"]
+                        ]
+                        st.bar_chart(plot_df, use_container_width=True)
+
+                if metrics_path is not None:
+                    import json
+                    try:
+                        model_metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+                        st.subheader("Chronological back-test metrics")
+
+                        # Parse the schema actually written by fire_harmonizer_light_model.py.
+                        # It nests selection metadata under final_method_selection and
+                        # aggregate validation results under walk_forward_backtest.
+                        selection = model_metrics.get("final_method_selection", {})
+                        backtest = model_metrics.get("walk_forward_backtest", {})
+                        chosen = selection.get(
+                            "selected_method", model_metrics.get("selected_method", selected_method)
+                        )
+                        reason = selection.get(
+                            "reason", model_metrics.get("selection_reason", "Not recorded in metrics file")
+                        )
+                        chosen_label = (
+                            "ML" if chosen == "hist_gradient_boosting" else
+                            "Persistence" if chosen == "persistence_baseline" else str(chosen)
+                        )
+                        st.write("**Validation-selected approach:**", chosen_label)
+                        st.write("**Validation-based selection reason:**", reason)
+
+                        if backtest:
+                            agg_rows = [{
+                                "Held-out rows": backtest.get("rows", "—"),
+                                "Positive rate": (
+                                    f"{100 * float(backtest['positive_rate']):.1f}%"
+                                    if backtest.get("positive_rate") is not None else "—"
+                                ),
+                                "Precision": (
+                                    f"{float(backtest['precision']):.3f}"
+                                    if backtest.get("precision") is not None else "—"
+                                ),
+                                "Recall": (
+                                    f"{float(backtest['recall']):.3f}"
+                                    if backtest.get("recall") is not None else "—"
+                                ),
+                                "F1": (
+                                    f"{float(backtest['f1']):.3f}"
+                                    if backtest.get("f1") is not None else "—"
+                                ),
+                                "Average precision": (
+                                    f"{float(backtest['average_precision']):.3f}"
+                                    if backtest.get("average_precision") is not None else "—"
+                                ),
+                                "Test years": ", ".join(map(str, backtest.get("test_years", []))) or "—",
+                            }]
+                            st.markdown(
+                                render_readable_html_table(pd.DataFrame(agg_rows)),
+                                unsafe_allow_html=True,
+                            )
+                        else:
+                            legacy = model_metrics.get("test_metrics_by_method", {})
+                            if legacy:
+                                st.markdown(
+                                    render_readable_html_table(pd.DataFrame(legacy).T.reset_index().rename(
+                                        columns={"index": "Method"}
+                                    )),
+                                    unsafe_allow_html=True,
+                                )
+                            else:
+                                st.warning(
+                                    "No walk-forward metrics were found in this JSON. "
+                                    "Re-run fire_harmonizer_light_model.py to regenerate the model report."
+                                )
+
+                        annual_rows = model_metrics.get("annual_fold_summary", [])
+                        if annual_rows:
+                            st.write("**Annual walk-forward results**")
+                            annual_df = pd.DataFrame(annual_rows)
+                            preferred_annual = [
+                                "test_year", "validation_year", "selected_method", "train_rows",
+                                "validation_rows", "test_rows", "test_precision", "test_recall",
+                                "test_f1", "test_average_precision", "threshold",
+                            ]
+                            annual_df = annual_df[[c for c in preferred_annual if c in annual_df.columns]].copy()
+                            annual_df = annual_df.rename(columns={
+                                "test_year": "Test year",
+                                "validation_year": "Validation year",
+                                "selected_method": "Selected method",
+                                "train_rows": "Training rows",
+                                "validation_rows": "Validation rows",
+                                "test_rows": "Test rows",
+                                "test_precision": "Precision",
+                                "test_recall": "Recall",
+                                "test_f1": "F1",
+                                "test_average_precision": "Average precision",
+                                "threshold": "Threshold",
+                            })
+                            for col in ["Precision", "Recall", "F1", "Average precision", "Threshold"]:
+                                if col in annual_df.columns:
+                                    annual_df[col] = annual_df[col].apply(
+                                        lambda x: f"{float(x):.3f}" if pd.notna(x) else "—"
+                                    )
+                            st.markdown(
+                                render_readable_html_table(annual_df),
+                                unsafe_allow_html=True,
+                            )
+                    except Exception as exc:
+                        st.error(f"Metrics file could not be read: {exc}")
+                else:
+                    st.info(
+                        "No model_metrics.json was found. The watchlist is available, but chronological "
+                        "back-test metrics will appear only after running the model script successfully."
+                    )
+        except Exception as exc:
+            st.error(f"Could not read the saved watchlist: {exc}")
+
+    st.warning(
+        "Research-only interpretation: the target is whether the existing M7 C score reaches the "
+        "C-active threshold in the next seven days for the same sector. It does not predict confirmed fires, "
+        "burned area, fire severity, or emergency risk. Because historical M7 baselines may include later dates, "
+        "this is not a live early-warning product."
+    )
 
 
 # ============================================================
