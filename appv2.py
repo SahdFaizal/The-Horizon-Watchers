@@ -2725,7 +2725,17 @@ with st.expander("Experimental 7-day activity watchlist", expanded=False):
                             "selected_method": "Selected approach",
                         }
                     )
-                  
+                    st.markdown(render_readable_html_table(watch_display), unsafe_allow_html=True)
+
+                    chart_source = watch_df.copy()
+                    chart_source["model_score"] = pd.to_numeric(chart_source["model_score"], errors="coerce")
+                    chart_source = chart_source.dropna(subset=["model_score"])
+                    if chart_source.empty:
+                        st.info("The watchlist contains no numeric scores to plot.")
+                    else:
+                        plot_df = chart_source.sort_values("model_score", ascending=True).set_index("sector")[
+                            ["model_score"]
+                        ]
 
         except Exception as exc:
             st.error(f"Could not read the saved watchlist: {exc}")
