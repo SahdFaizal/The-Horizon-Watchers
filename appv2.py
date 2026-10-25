@@ -35,7 +35,6 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import json
 
 
 # ============================================================
@@ -2740,6 +2739,7 @@ with st.expander("Experimental 7-day activity watchlist", expanded=False):
                         st.bar_chart(plot_df, use_container_width=True)
 
                 if metrics_path is not None:
+                    import json
                     try:
                         model_metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
                         st.subheader("Chronological back-test metrics")
