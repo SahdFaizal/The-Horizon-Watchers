@@ -2736,7 +2736,6 @@ with st.expander("Experimental 7-day activity watchlist", expanded=False):
                         plot_df = chart_source.sort_values("model_score", ascending=True).set_index("sector")[
                             ["model_score"]
                         ]
-                        st.bar_chart(plot_df, use_container_width=True)
 
                 if metrics_path is not None:
                     import json
