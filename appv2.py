@@ -2652,7 +2652,7 @@ with st.expander("Experimental 7-day activity watchlist", expanded=False):
         )
     else:
         try:
-            watch_df = pd.read_csv(watchlist_path)
+            watch_df = pd.read_csv(watchlist_path, low_memory=False)
             if watch_df.empty:
                 st.warning("The saved watchlist is empty. Re-run the model to create sector scores.")
             else:
