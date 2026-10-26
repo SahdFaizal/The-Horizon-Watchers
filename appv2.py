@@ -2024,6 +2024,49 @@ with st.expander("What the scientific terms mean", expanded=True):
     )
 
 
+with st.expander("5×5 sector geography reference", expanded=False):
+    st.markdown(
+        """
+        Use this reference to interpret the project's C01–C25 grid labels. Bounds and centres describe the rectangular analysis grid, while the geographic descriptions are approximate orientation aids—not official administrative boundaries or a precise Amazon biome mask. Several western cells include Pacific Ocean and Andean areas; eastern and southern cells include areas outside the Amazon rainforest, including parts of the Cerrado and Pantanal.
+        """
+    )
+    sector_geography = pd.DataFrame([
+        {"Sector": "C01", "Latitude bounds": "4°N–10°N", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "7°N, 78.2°W", "Approximate geographic region": "Pacific-facing western Colombia and adjacent Pacific Ocean"},
+        {"Sector": "C02", "Latitude bounds": "4°N–10°N", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "7°N, 70.6°W", "Approximate geographic region": "Northern Colombia and western Venezuela"},
+        {"Sector": "C03", "Latitude bounds": "4°N–10°N", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "7°N, 63.0°W", "Approximate geographic region": "Eastern Venezuela and western Guiana Shield"},
+        {"Sector": "C04", "Latitude bounds": "4°N–10°N", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "7°N, 55.4°W", "Approximate geographic region": "Guyana, Suriname and French Guiana"},
+        {"Sector": "C05", "Latitude bounds": "4°N–10°N", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "7°N, 47.8°W", "Approximate geographic region": "Amapá and far northern Brazil, adjoining Atlantic coast"},
+        {"Sector": "C06", "Latitude bounds": "2°S–4°N", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "1°N, 78.2°W", "Approximate geographic region": "Southern Colombia, Ecuador and western Andean foothills"},
+        {"Sector": "C07", "Latitude bounds": "2°S–4°N", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "1°N, 70.6°W", "Approximate geographic region": "Central and southern Colombia and adjoining Amazon borderlands"},
+        {"Sector": "C08", "Latitude bounds": "2°S–4°N", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "1°N, 63.0°W", "Approximate geographic region": "Eastern Colombia, southern Venezuela and northwestern Amazonia"},
+        {"Sector": "C09", "Latitude bounds": "2°S–4°N", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "1°N, 55.4°W", "Approximate geographic region": "Guianas and northern Brazil"},
+        {"Sector": "C10", "Latitude bounds": "2°S–4°N", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "1°N, 47.8°W", "Approximate geographic region": "Amapá, northern Pará and the lower Amazon region"},
+        {"Sector": "C11", "Latitude bounds": "8°S–2°S", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "5°S, 78.2°W", "Approximate geographic region": "Pacific-facing Peru, western Andes and adjacent Pacific Ocean"},
+        {"Sector": "C12", "Latitude bounds": "8°S–2°S", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "5°S, 70.6°W", "Approximate geographic region": "Peruvian Amazon and western Amazon borderlands of Bolivia"},
+        {"Sector": "C13", "Latitude bounds": "8°S–2°S", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "5°S, 63.0°W", "Approximate geographic region": "Southwestern Amazonia, including northern Bolivia and western Brazil"},
+        {"Sector": "C14", "Latitude bounds": "8°S–2°S", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "5°S, 55.4°W", "Approximate geographic region": "Central and southern Amazon region, west-central Brazil"},
+        {"Sector": "C15", "Latitude bounds": "8°S–2°S", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "5°S, 47.8°W", "Approximate geographic region": "Eastern Amazonia and the Pará–Tocantins transition"},
+        {"Sector": "C16", "Latitude bounds": "14°S–8°S", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "11°S, 78.2°W", "Approximate geographic region": "Southern Peru's Pacific coast, western Andes and adjacent Pacific Ocean"},
+        {"Sector": "C17", "Latitude bounds": "14°S–8°S", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "11°S, 70.6°W", "Approximate geographic region": "Southern Peru and western Bolivia"},
+        {"Sector": "C18", "Latitude bounds": "14°S–8°S", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "11°S, 63.0°W", "Approximate geographic region": "Bolivian lowlands and southwestern Brazilian Amazonia"},
+        {"Sector": "C19", "Latitude bounds": "14°S–8°S", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "11°S, 55.4°W", "Approximate geographic region": "West-central Brazil and the southern Amazon–Cerrado transition"},
+        {"Sector": "C20", "Latitude bounds": "14°S–8°S", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "11°S, 47.8°W", "Approximate geographic region": "Central Brazil, including parts of the Cerrado and Tocantins–Goiás region"},
+        {"Sector": "C21", "Latitude bounds": "20°S–14°S", "Longitude bounds": "82.0°W–74.4°W", "Approximate centre (lat, lon)": "17°S, 78.2°W", "Approximate geographic region": "Southern Peru, western Andes and adjacent Pacific Ocean"},
+        {"Sector": "C22", "Latitude bounds": "20°S–14°S", "Longitude bounds": "74.4°W–66.8°W", "Approximate centre (lat, lon)": "17°S, 70.6°W", "Approximate geographic region": "Southern Peru and western to central Bolivia"},
+        {"Sector": "C23", "Latitude bounds": "20°S–14°S", "Longitude bounds": "66.8°W–59.2°W", "Approximate centre (lat, lon)": "17°S, 63.0°W", "Approximate geographic region": "Eastern Bolivia and southwestern Brazil"},
+        {"Sector": "C24", "Latitude bounds": "20°S–14°S", "Longitude bounds": "59.2°W–51.6°W", "Approximate centre (lat, lon)": "17°S, 55.4°W", "Approximate geographic region": "South-central Brazil, including the Pantanal and Cerrado transition"},
+        {"Sector": "C25", "Latitude bounds": "20°S–14°S", "Longitude bounds": "51.6°W–44.0°W", "Approximate centre (lat, lon)": "17°S, 47.8°W", "Approximate geographic region": "Central-eastern Brazil, including the Cerrado and Brazilian Highlands"},
+    ])
+    # Use a plain HTML table here rather than Streamlit's dataframe grid.
+    # This avoids a blank/unreadable grid when the host theme or injected CSS
+    # conflicts with the interactive dataframe renderer.
+    st.markdown(
+        render_readable_html_table(sector_geography),
+        unsafe_allow_html=True,
+    )
+    st.caption("Grid sectors are rectangular analytical bins. Their geographic labels are approximate; the grid is not a precise fire-location layer or an official biome boundary.")
+
+
 # ============================================================
 # STEP 1 — BURNING ACTIVITY CALENDAR
 # ============================================================
@@ -2727,16 +2770,114 @@ with st.expander("Experimental 7-day activity watchlist", expanded=False):
                     )
                     st.markdown(render_readable_html_table(watch_display), unsafe_allow_html=True)
 
-                    chart_source = watch_df.copy()
-                    chart_source["model_score"] = pd.to_numeric(chart_source["model_score"], errors="coerce")
-                    chart_source = chart_source.dropna(subset=["model_score"])
-                    if chart_source.empty:
-                        st.info("The watchlist contains no numeric scores to plot.")
-                    else:
-                        plot_df = chart_source.sort_values("model_score", ascending=True).set_index("sector")[
-                            ["model_score"]
-                        ]
 
+                if metrics_path is not None:
+                    import json
+                    try:
+                        model_metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+                        st.subheader("Chronological back-test metrics")
+
+                        # Parse the schema actually written by fire_harmonizer_light_model.py.
+                        # It nests selection metadata under final_method_selection and
+                        # aggregate validation results under walk_forward_backtest.
+                        selection = model_metrics.get("final_method_selection", {})
+                        backtest = model_metrics.get("walk_forward_backtest", {})
+                        chosen = selection.get(
+                            "selected_method", model_metrics.get("selected_method", selected_method)
+                        )
+                        reason = selection.get(
+                            "reason", model_metrics.get("selection_reason", "Not recorded in metrics file")
+                        )
+                        chosen_label = (
+                            "ML" if chosen == "hist_gradient_boosting" else
+                            "Persistence" if chosen == "persistence_baseline" else str(chosen)
+                        )
+                        st.write("**Validation-selected approach:**", chosen_label)
+                        st.write("**Validation-based selection reason:**", reason)
+
+                        if backtest:
+                            agg_rows = [{
+                                "Held-out rows": backtest.get("rows", "—"),
+                                "Positive rate": (
+                                    f"{100 * float(backtest['positive_rate']):.1f}%"
+                                    if backtest.get("positive_rate") is not None else "—"
+                                ),
+                                "Precision": (
+                                    f"{float(backtest['precision']):.3f}"
+                                    if backtest.get("precision") is not None else "—"
+                                ),
+                                "Recall": (
+                                    f"{float(backtest['recall']):.3f}"
+                                    if backtest.get("recall") is not None else "—"
+                                ),
+                                "F1": (
+                                    f"{float(backtest['f1']):.3f}"
+                                    if backtest.get("f1") is not None else "—"
+                                ),
+                                "Average precision": (
+                                    f"{float(backtest['average_precision']):.3f}"
+                                    if backtest.get("average_precision") is not None else "—"
+                                ),
+                                "Test years": ", ".join(map(str, backtest.get("test_years", []))) or "—",
+                            }]
+                            st.markdown(
+                                render_readable_html_table(pd.DataFrame(agg_rows)),
+                                unsafe_allow_html=True,
+                            )
+                        else:
+                            legacy = model_metrics.get("test_metrics_by_method", {})
+                            if legacy:
+                                st.markdown(
+                                    render_readable_html_table(pd.DataFrame(legacy).T.reset_index().rename(
+                                        columns={"index": "Method"}
+                                    )),
+                                    unsafe_allow_html=True,
+                                )
+                            else:
+                                st.warning(
+                                    "No walk-forward metrics were found in this JSON. "
+                                    "Re-run fire_harmonizer_light_model.py to regenerate the model report."
+                                )
+
+                        annual_rows = model_metrics.get("annual_fold_summary", [])
+                        if annual_rows:
+                            st.write("**Annual walk-forward results**")
+                            annual_df = pd.DataFrame(annual_rows)
+                            preferred_annual = [
+                                "test_year", "validation_year", "selected_method", "train_rows",
+                                "validation_rows", "test_rows", "test_precision", "test_recall",
+                                "test_f1", "test_average_precision", "threshold",
+                            ]
+                            annual_df = annual_df[[c for c in preferred_annual if c in annual_df.columns]].copy()
+                            annual_df = annual_df.rename(columns={
+                                "test_year": "Test year",
+                                "validation_year": "Validation year",
+                                "selected_method": "Selected method",
+                                "train_rows": "Training rows",
+                                "validation_rows": "Validation rows",
+                                "test_rows": "Test rows",
+                                "test_precision": "Precision",
+                                "test_recall": "Recall",
+                                "test_f1": "F1",
+                                "test_average_precision": "Average precision",
+                                "threshold": "Threshold",
+                            })
+                            for col in ["Precision", "Recall", "F1", "Average precision", "Threshold"]:
+                                if col in annual_df.columns:
+                                    annual_df[col] = annual_df[col].apply(
+                                        lambda x: f"{float(x):.3f}" if pd.notna(x) else "—"
+                                    )
+                            st.markdown(
+                                render_readable_html_table(annual_df),
+                                unsafe_allow_html=True,
+                            )
+                    except Exception as exc:
+                        st.error(f"Metrics file could not be read: {exc}")
+                else:
+                    st.info(
+                        "No model_metrics.json was found. The watchlist is available, but chronological "
+                        "back-test metrics will appear only after running the model script successfully."
+                    )
         except Exception as exc:
             st.error(f"Could not read the saved watchlist: {exc}")
 
