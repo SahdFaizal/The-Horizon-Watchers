@@ -1549,7 +1549,6 @@ CALENDAR_METRICS = {
         "unit": "σ",
         "colorscale": "YlOrRd",
         "description": "How unusual the sector-day detection count is against its historical reference; a statistical signal, not a fire count or severity score.",
-        "kind": "anomaly",
     },
     "FRP anomaly — F": {
         "column": "m7_F",
@@ -1557,7 +1556,6 @@ CALENDAR_METRICS = {
         "unit": "σ",
         "colorscale": "YlOrRd",
         "description": "How unusual summed Fire Radiative Power is against its historical reference; FRP is power, not total fire energy.",
-        "kind": "anomaly",
     },
     "Sensor concordance — G": {
         "column": "m7_G",
@@ -1565,7 +1563,6 @@ CALENDAR_METRICS = {
         "unit": "0–1",
         "colorscale": "Blues",
         "description": "Agreement between standardized MODIS and VIIRS count signals; related to C and not ground-truth confirmation.",
-        "kind": "bounded",
     },
     "Spatial coherence — S": {
         "column": "m7_S",
@@ -1573,23 +1570,6 @@ CALENDAR_METRICS = {
         "unit": "0–1",
         "colorscale": "Oranges",
         "description": "Share of neighboring sectors crossing the C threshold; derived from C, not independent confirmation.",
-        "kind": "bounded",
-    },
-    "MODIS hotspot detections": {
-        "column": "modis_count",
-        "label": "MODIS hotspot detections",
-        "unit": "detections",
-        "colorscale": "Viridis",
-        "description": "Raw MODIS hotspot-detection count for each sector-day. This is a sensor-specific detection count, not a count of unique ground fires.",
-        "kind": "count",
-    },
-    "VIIRS hotspot detections": {
-        "column": "viirs_count",
-        "label": "VIIRS hotspot detections",
-        "unit": "detections",
-        "colorscale": "Cividis",
-        "description": "Raw Suomi NPP VIIRS hotspot-detection count for each sector-day. This is a sensor-specific detection count, not a count of unique ground fires.",
-        "kind": "count",
     },
 }
 
@@ -1598,81 +1578,52 @@ def build_burning_activity_calendar(
     science: pd.DataFrame,
     selected_year: int,
     metric_name: str,
-    date_start: pd.Timestamp | None = None,
-    date_end: pd.Timestamp | None = None,
-    selected_sectors: list[str] | None = None,
 ) -> go.Figure:
-    """Build the selected-year × sector calendar for one metric.
-
-    Raw MODIS and VIIRS counts are displayed as separate sensor-specific views.
-    They are never combined into a single supposedly interchangeable count.
-    """
+    """Build the challenge-facing year × sector burning-activity calendar."""
     spec = CALENDAR_METRICS[metric_name]
     column = spec["column"]
 
-    if column not in science.columns:
-        figure = go.Figure()
-        figure.add_annotation(
-            text=f"Required field '{column}' is not present in the M7 science table.",
-            x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False,
-        )
-        figure.update_layout(height=360, template=CHART_TEMPLATE)
-        return figure
-
-    normalized_dates = science["acq_date"].dt.normalize()
-    mask = science["acq_date"].dt.year.eq(selected_year)
-    if date_start is not None:
-        mask &= normalized_dates.ge(pd.Timestamp(date_start).normalize())
-    if date_end is not None:
-        mask &= normalized_dates.le(pd.Timestamp(date_end).normalize())
-    if selected_sectors is not None:
-        mask &= science["sector"].isin(selected_sectors)
-
-    work = science.loc[mask, ["acq_date", "sector", column]].copy()
+    work = science[
+        science["acq_date"].dt.year.eq(selected_year)
+    ][["acq_date", "sector", column]].copy()
 
     if work.empty:
         figure = go.Figure()
-        figure.add_annotation(
-            text="No records match the selected date range and sectors.",
-            x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False,
-            font=dict(size=14, color=CHART_MUTED),
-        )
         figure.update_layout(
             title=dict(
                 text=f"<b>Burning Activity Calendar — {selected_year}</b>",
-                font=dict(size=19, color=CHART_TEXT), x=0.02, xanchor="left",
+                font=dict(size=19, color=CHART_TEXT),
+                x=0.02,
+                xanchor="left",
             ),
-            template=CHART_TEMPLATE, height=530,
-            paper_bgcolor=CHART_PAPER, plot_bgcolor=CHART_PAPER,
+            template=CHART_TEMPLATE,
+            height=530,
+            paper_bgcolor=CHART_PAPER,
+            plot_bgcolor=CHART_PAPER,
         )
         return figure
 
     work["date"] = pd.to_datetime(work["acq_date"], errors="coerce")
     work["value"] = pd.to_numeric(work[column], errors="coerce")
 
-    # The source science table is intended to contain one row per date × sector.
-    # If duplicates are present, counts are summed while statistical scores are averaged.
-    aggregation = (lambda values: values.sum(min_count=1)) if spec.get("kind") == "count" else "mean"
+    # The science matrix should normally contain one row per date × sector.
+    # If duplicates exist, mean them rather than silently taking one record.
     pivot = (
         work.dropna(subset=["date"])
         .groupby(["sector", "date"], as_index=False)["value"]
-        .agg(aggregation)
+        .mean()
         .pivot(index="sector", columns="date", values="value")
     )
 
-    requested_sector_order = selected_sectors if selected_sectors else EXPECTED_SECTORS
-    ordered_sectors = [s for s in requested_sector_order if s in pivot.index]
+    ordered_sectors = [s for s in EXPECTED_SECTORS if s in pivot.index]
     pivot = pivot.reindex(ordered_sectors)
 
     dates = list(pivot.columns)
     z = pivot.to_numpy(dtype=float)
-    numeric = pd.to_numeric(work["value"], errors="coerce").dropna()
 
+    numeric = pd.to_numeric(work["value"], errors="coerce").dropna()
     if numeric.empty:
         zmin, zmax = 0.0, 1.0
-    elif spec.get("kind") == "count":
-        zmin = 0.0
-        zmax = max(1.0, float(numeric.quantile(0.99)))
     elif metric_name == "Activity anomaly — C":
         zmin = 0.0
         upper = float(numeric.quantile(0.99))
@@ -1687,220 +1638,111 @@ def build_burning_activity_calendar(
 
     hover_name = spec["label"]
     unit = spec["unit"]
-    value_format = ",.0f" if spec.get("kind") == "count" else ".3f"
 
     figure = go.Figure(
         data=go.Heatmap(
-            x=dates, y=ordered_sectors, z=z,
-            colorscale=spec["colorscale"], zmin=zmin, zmax=zmax,
-            connectgaps=False, hoverongaps=False, xgap=1, ygap=2,
+            x=dates,
+            y=ordered_sectors,
+            z=z,
+            colorscale=spec["colorscale"],
+            zmin=zmin,
+            zmax=zmax,
+            connectgaps=False,
+            hoverongaps=False,
+            xgap=1,
+            ygap=2,
             colorbar=dict(
                 title=dict(
                     text=f"<b>{hover_name} ({unit})</b>",
                     font=dict(size=12, color=CHART_TEXT),
                 ),
                 tickfont=dict(size=11, color=CHART_TEXT),
-                outlinecolor=CHART_GRID, outlinewidth=1,
+                outlinecolor=CHART_GRID,
+                outlinewidth=1,
             ),
             hovertemplate=(
-                "<b>%{y}</b><br>%{x|%d %b %Y}<br>"
-                f"<b>{hover_name}:</b> %{{z:{value_format}}} {unit}<extra></extra>"
+                "<b>%{y}</b><br>"
+                "%{x|%d %b %Y}<br>"
+                f"<b>{hover_name}:</b> %{{z:.3f}} {unit}<extra></extra>"
             ),
         )
     )
 
-    if date_start is not None and date_end is not None:
-        range_start = pd.Timestamp(date_start)
-        range_end = pd.Timestamp(date_end) + pd.Timedelta(days=1)
-    else:
-        range_start = pd.Timestamp(f"{selected_year}-01-01")
-        range_end = pd.Timestamp(f"{selected_year}-12-31") + pd.Timedelta(days=1)
-
     month_starts = pd.date_range(
-        range_start.to_period("M").to_timestamp(),
-        range_end.to_period("M").to_timestamp(),
+        f"{selected_year}-01-01",
+        f"{selected_year}-12-01",
         freq="MS",
     )
+
     for month in month_starts:
-        figure.add_shape(
-            type="line", x0=month, x1=month, y0=0, y1=1,
-            xref="x", yref="paper",
-            line=dict(color=CHART_GRID, width=1, dash="dot"),
-        )
+        if dates:
+            figure.add_shape(
+                type="line",
+                x0=month,
+                x1=month,
+                y0=0,
+                y1=1,
+                xref="x",
+                yref="paper",
+                line=dict(
+                    color=CHART_GRID,
+                    width=1,
+                    dash="dot",
+                ),
+            )
 
     figure.update_layout(
         title=dict(
             text=f"<b>Burning Activity Calendar — {selected_year}</b>",
-            font=dict(size=19, color=CHART_TEXT), x=0.02, xanchor="left",
+            font=dict(size=19, color=CHART_TEXT),
+            x=0.02,
+            xanchor="left",
         ),
-        template=CHART_TEMPLATE, paper_bgcolor=CHART_PAPER,
-        plot_bgcolor=CHART_PAPER, font=dict(size=13, color=CHART_TEXT),
-        height=max(420, 150 + 27 * len(ordered_sectors)),
-        margin=dict(l=75, r=100, t=95, b=62), hovermode="closest",
+        template=CHART_TEMPLATE,
+        paper_bgcolor=CHART_PAPER,
+        plot_bgcolor=CHART_PAPER,
+        font=dict(size=13, color=CHART_TEXT),
+        height=610,
+        margin=dict(l=75, r=100, t=95, b=62),
+        hovermode="closest",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0,
+            font=dict(size=11, color=CHART_TEXT),
+            bgcolor="#ffffff",
+            bordercolor=CHART_GRID,
+            borderwidth=1,
+        ),
         xaxis=dict(
-            title=dict(text="<b>Observation date</b>", font=dict(size=13, color=CHART_TEXT)),
-            tickformat="%b", dtick="M1", tickfont=dict(size=11, color=CHART_TEXT),
-            showgrid=False, showline=True, linecolor=CHART_GRID,
+            title=dict(
+                text="<b>Observation date</b>",
+                font=dict(size=13, color=CHART_TEXT),
+            ),
+            tickformat="%b",
+            dtick="M1",
+            tickfont=dict(size=11, color=CHART_TEXT),
+            showgrid=False,
+            showline=True,
+            linecolor=CHART_GRID,
             rangeslider=dict(visible=True, thickness=0.06),
-            range=[range_start, range_end],
         ),
         yaxis=dict(
-            title=dict(text="<b>Sector</b>", font=dict(size=13, color=CHART_TEXT)),
+            title=dict(
+                text="<b>Sector</b>",
+                font=dict(size=13, color=CHART_TEXT),
+            ),
             tickfont=dict(size=11, color=CHART_TEXT),
-            categoryorder="array", categoryarray=ordered_sectors,
-            showgrid=False, showline=True, linecolor=CHART_GRID,
+            categoryorder="array",
+            categoryarray=ordered_sectors,
+            showgrid=False,
+            showline=True,
+            linecolor=CHART_GRID,
         ),
     )
-    return figure
 
-
-def build_monthly_sensor_comparison(
-    science: pd.DataFrame,
-    selected_year: int,
-    selected_month: int,
-    selected_sectors: list[str],
-    date_start: pd.Timestamp,
-    date_end: pd.Timestamp,
-) -> tuple[pd.DataFrame, str]:
-    """Compare selected month's MODIS/VIIRS counts with prior-year median.
-
-    Historical years are included only when every selected sector has a row
-    for every day in the comparison window and both sensor count fields are
-    populated. The target-year window is aligned to the same month/day range.
-    """
-    required = {"modis_count", "viirs_count"}
-    if not required.issubset(science.columns):
-        return pd.DataFrame(), "The M7 table does not contain both modis_count and viirs_count."
-    if not selected_sectors:
-        return pd.DataFrame(), "Select at least one sector to calculate this comparison."
-
-    month_start = pd.Timestamp(year=selected_year, month=selected_month, day=1)
-    month_end = month_start + pd.offsets.MonthEnd(0)
-    requested_start = max(month_start, pd.Timestamp(date_start))
-    requested_end = min(month_end, pd.Timestamp(date_end))
-    if requested_start > requested_end:
-        return pd.DataFrame(), "The selected calendar date range does not overlap this month."
-
-    target_year_rows = science[
-        science["acq_date"].dt.year.eq(selected_year)
-        & science["acq_date"].dt.month.eq(selected_month)
-        & science["acq_date"].dt.day.between(requested_start.day, requested_end.day)
-        & science["sector"].isin(selected_sectors)
-    ].copy()
-    if target_year_rows.empty:
-        return pd.DataFrame(), "No records are available for the selected month and sectors."
-
-    target_latest = target_year_rows["acq_date"].max()
-    effective_end = min(requested_end, pd.Timestamp(target_latest).normalize())
-    if effective_end < requested_start:
-        return pd.DataFrame(), "No observations are available inside the selected month window."
-
-    start_day = requested_start.day
-    end_day = effective_end.day
-    expected_rows = len(pd.date_range(requested_start, effective_end, freq="D")) * len(selected_sectors)
-
-    def is_complete(frame: pd.DataFrame) -> bool:
-        if frame.empty:
-            return False
-        unique_pairs = frame[["acq_date", "sector"]].drop_duplicates().shape[0]
-        sensor_values_present = frame[["modis_count", "viirs_count"]].notna().all().all()
-        return unique_pairs == expected_rows and bool(sensor_values_present)
-
-    if not is_complete(target_year_rows):
-        return pd.DataFrame(), (
-            "The selected period does not have complete sector-day coverage for all selected sectors "
-            "and both sensors, so a like-for-like comparison is not shown."
-        )
-
-    target_totals = {
-        "Year": selected_year,
-        "MODIS detections": float(pd.to_numeric(target_year_rows["modis_count"], errors="coerce").sum()),
-        "VIIRS detections": float(pd.to_numeric(target_year_rows["viirs_count"], errors="coerce").sum()),
-        "Record type": "Selected period",
-    }
-
-    historical_rows = []
-    earlier_years = sorted(
-        int(year) for year in science["acq_date"].dt.year.dropna().unique()
-        if int(year) < selected_year
-    )
-    for year in earlier_years:
-        historical = science[
-            science["acq_date"].dt.year.eq(year)
-            & science["acq_date"].dt.month.eq(selected_month)
-            & science["acq_date"].dt.day.between(start_day, end_day)
-            & science["sector"].isin(selected_sectors)
-        ].copy()
-        if not is_complete(historical):
-            continue
-        historical_rows.append({
-            "Year": year,
-            "MODIS detections": float(pd.to_numeric(historical["modis_count"], errors="coerce").sum()),
-            "VIIRS detections": float(pd.to_numeric(historical["viirs_count"], errors="coerce").sum()),
-            "Record type": "Historical year",
-        })
-
-    if not historical_rows:
-        return pd.DataFrame([target_totals]), (
-            "No earlier year has complete matching coverage for this month/day window and sector selection. "
-            "The selected-period totals are shown without a historical median."
-        )
-
-    history = pd.DataFrame(historical_rows)
-    median_row = {
-        "Year": "Historical median",
-        "MODIS detections": float(history["MODIS detections"].median()),
-        "VIIRS detections": float(history["VIIRS detections"].median()),
-        "Record type": "Median of complete prior years",
-    }
-    output = pd.concat(
-        [history, pd.DataFrame([median_row, target_totals])],
-        ignore_index=True,
-    )
-    note = (
-        f"Comparing {requested_start:%d %b}–{effective_end:%d %b} in {selected_year} "
-        f"against the same month/day window in {len(historical_rows)} complete prior year(s). "
-        "MODIS and VIIRS are compared separately; their raw counts are not added together."
-    )
-    return output, note
-
-
-def build_monthly_sensor_comparison_figure(comparison: pd.DataFrame) -> go.Figure:
-    """Create a two-sensor current-period versus historical-median bar chart."""
-    figure = go.Figure()
-    if comparison.empty:
-        return figure
-    median_rows = comparison[comparison["Record type"].eq("Median of complete prior years")]
-    current_rows = comparison[comparison["Record type"].eq("Selected period")]
-    if median_rows.empty or current_rows.empty:
-        return figure
-    median = median_rows.iloc[0]
-    current = current_rows.iloc[0]
-    categories = ["MODIS", "VIIRS"]
-    figure.add_trace(go.Bar(
-        name="Selected period",
-        x=categories,
-        y=[current["MODIS detections"], current["VIIRS detections"]],
-        marker=dict(color=CHART_ACCENT),
-        hovertemplate="<b>%{x}</b><br>Selected period: %{y:,.0f} detections<extra></extra>",
-    ))
-    figure.add_trace(go.Bar(
-        name="Historical median",
-        x=categories,
-        y=[median["MODIS detections"], median["VIIRS detections"]],
-        marker=dict(color=CHART_TEXT),
-        hovertemplate="<b>%{x}</b><br>Historical median: %{y:,.0f} detections<extra></extra>",
-    ))
-    figure.update_layout(
-        title=dict(text="<b>Selected month versus historical median</b>", font=dict(size=18, color=CHART_TEXT), x=0.02),
-        barmode="group", template=CHART_TEMPLATE, height=390,
-        paper_bgcolor=CHART_PAPER, plot_bgcolor=CHART_PAPER,
-        font=dict(size=13, color=CHART_TEXT),
-        margin=dict(l=60, r=30, t=75, b=55),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-        yaxis=dict(title="Hotspot detections", rangemode="tozero", gridcolor=CHART_GRID),
-        xaxis=dict(title="Sensor (shown separately)", showgrid=False),
-    )
     return figure
 
 
@@ -1908,19 +1750,11 @@ def annual_monitoring_summary(
     science: pd.DataFrame,
     events: pd.DataFrame,
     selected_year: int,
-    date_start: pd.Timestamp | None = None,
-    date_end: pd.Timestamp | None = None,
-    selected_sectors: list[str] | None = None,
 ) -> dict[str, object]:
     """Compute concise selected-year indicators for the monitoring callout."""
-    year_mask = science["acq_date"].dt.year.eq(selected_year)
-    if date_start is not None:
-        year_mask &= science["acq_date"].ge(pd.Timestamp(date_start))
-    if date_end is not None:
-        year_mask &= science["acq_date"].le(pd.Timestamp(date_end))
-    if selected_sectors is not None:
-        year_mask &= science["sector"].isin(selected_sectors)
-    year_science = science.loc[year_mask].copy()
+    year_science = science[
+        science["acq_date"].dt.year.eq(selected_year)
+    ].copy()
 
     c_values = pd.to_numeric(year_science["m7_C"], errors="coerce")
     active = c_values >= ANOMALY_THRESHOLD
@@ -1931,9 +1765,6 @@ def annual_monitoring_summary(
         min_duration=1,
         min_footprint=1,
         min_peak_c=ANOMALY_THRESHOLD,
-        date_start=date_start,
-        date_end=date_end,
-        selected_sectors=selected_sectors,
     )
 
     if year_science.empty or c_values.dropna().empty:
@@ -2077,35 +1908,26 @@ def filter_events_for_year_and_controls(
     min_duration: int,
     min_footprint: int,
     min_peak_c: float,
-    date_start: pd.Timestamp | None = None,
-    date_end: pd.Timestamp | None = None,
-    selected_sectors: list[str] | None = None,
 ) -> pd.DataFrame:
-    """Filter events by year overlap, optional date/sector scope, and controls."""
+    """Filter events with overlap-based year semantics and advanced controls."""
     year_start = pd.Timestamp(f"{selected_year}-01-01")
     year_end = pd.Timestamp(f"{selected_year}-12-31")
-    window_start = max(year_start, pd.Timestamp(date_start)) if date_start is not None else year_start
-    window_end = min(year_end, pd.Timestamp(date_end)) if date_end is not None else year_end
 
     result = events[
-        (events["emergence_date"] <= window_end)
-        & (events["decay_date"] >= window_start)
+        (events["emergence_date"] <= year_end)
+        & (events["decay_date"] >= year_start)
     ].copy()
 
-    if selected_sectors is not None:
-        selected_set = set(selected_sectors)
-        if not selected_set:
-            result = result.iloc[0:0]
-        elif "sectors_involved" in result.columns:
-            result = result[
-                result["sectors_involved"].apply(
-                    lambda value: bool(set(parse_sector_list(value)) & selected_set)
-                )
-            ]
+    result = result[
+        result["duration_days"] >= min_duration
+    ]
+    result = result[
+        result["spatial_footprint"] >= min_footprint
+    ]
+    result = result[
+        result["peak_C"] >= min_peak_c
+    ]
 
-    result = result[result["duration_days"] >= min_duration]
-    result = result[result["spatial_footprint"] >= min_footprint]
-    result = result[result["peak_C"] >= min_peak_c]
     return result.reset_index(drop=True)
 
 
@@ -2185,7 +2007,7 @@ with st.expander("What the scientific terms mean", expanded=True):
 
         **MODIS and VIIRS:** the two satellite-instrument data streams being compared. They differ in sensor design and sampling, so one sensor's raw count should not simply be treated as equal to the other's. In this project, VIIRS is from Suomi NPP.
 
-        **Raw MODIS / VIIRS counts:** the number of sensor-reported hotspot detections aggregated into a sector-day. The two sensors are displayed separately because their observations are not directly interchangeable. **C — Activity anomaly:** how unusual the sector-day's hotspot-detection count is compared with its historical reference. The “σ” symbol means standard deviations on a standardized scale. C is a measure of statistical unusualness, not the number of fires, a burned-area estimate, or a direct measure of danger. Very sparse or near-zero-variance reference data can produce extreme scores, so inspect the underlying context.
+        **C — Activity anomaly:** how unusual the sector-day's hotspot-detection count is compared with its historical reference. The “σ” symbol means standard deviations on a standardized scale. C is a measure of statistical unusualness, not the number of fires, a burned-area estimate, or a direct measure of danger. Very sparse or near-zero-variance reference data can produce extreme scores, so inspect the underlying context.
 
         **F — FRP anomaly:** how unusual the summed Fire Radiative Power (FRP) is for a sector-day compared with its reference. FRP describes the rate of radiative energy release (power), not the total energy released over an entire fire. Summed FRP can rise simply because more detections were recorded, so F is related to—but not identical to—C.
 
@@ -2249,221 +2071,95 @@ with st.expander("5×5 sector geography reference", expanded=False):
 # STEP 1 — BURNING ACTIVITY CALENDAR
 # ============================================================
 
-# Determine available years from the data, not a hard-coded current-year list.
-years = sorted(science["acq_date"].dt.year.dropna().astype(int).unique().tolist())
-if not years:
-    st.error("The M7 science table contains no valid observation years.")
-    st.stop()
+# Determine years from the science record so the calendar always reflects
+# the actual stored coverage rather than a hard-coded current-year list.
+years = sorted(
+    science["acq_date"].dt.year.dropna().astype(int).unique().tolist()
+)
+years = [year for year in years if 2012 <= year <= 2026] or [2026]
 default_year = 2026 if 2026 in years else years[-1]
 
 st.markdown('<div class="section-kicker">Burning Activity Calendar</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="section-description">Explore the daily sector calendar using statistical evidence or separate sensor-specific raw hotspot counts. Blank cells mean no stored value for that sector-day; they are not proof that no burning occurred.</div>',
+    '<div class="section-description">This is the challenge-facing view: a harmonized day-by-sector calendar showing when and where satellite-observed burning activity occurs. Blank cells mean no stored observation record for that sector-day; they are not proof of zero burning.</div>',
     unsafe_allow_html=True,
 )
 
 calendar_controls = st.columns([0.9, 1.35, 1.75])
+
 with calendar_controls[0]:
     selected_year = st.selectbox(
-        "Calendar year", years, index=years.index(default_year),
-        help="Choose a year in the available archive. The latest year may be incomplete.",
+        "Calendar year",
+        years,
+        index=years.index(default_year),
+        help="Choose the historical year to inspect. 2026 is a partial year in the current archive.",
     )
 
-selected_year_data = science[science["acq_date"].dt.year.eq(selected_year)]
-if selected_year_data.empty:
-    st.warning("No science rows are available for this year.")
-    st.stop()
-year_min_date = pd.Timestamp(selected_year_data["acq_date"].min()).normalize()
-year_max_date = pd.Timestamp(selected_year_data["acq_date"].max()).normalize()
-
 with calendar_controls[1]:
-    available_metrics = [
-        name for name, spec in CALENDAR_METRICS.items()
-        if spec["column"] in science.columns
-    ]
-    if not available_metrics:
-        st.error("No supported calendar metric columns were found in the M7 table.")
-        st.stop()
     calendar_metric = st.selectbox(
-        "Calendar metric", available_metrics, index=0,
-        help=(
-            "C/F/G/S show derived evidence. MODIS and VIIRS raw counts are separate views "
-            "because the sensors have different detection characteristics."
-        ),
+        "Calendar metric",
+        list(CALENDAR_METRICS.keys()),
+        index=0,
+        help="C is the primary activity-anomaly view. F, G, and S show related evidence dimensions; G and S are not independent confirmation.",
     )
 
 with calendar_controls[2]:
     st.markdown(
-        '<div class="context-box"><strong>Historical monitoring role</strong><br>Use the calendar to explore unusual activity and historical patterns. It is not a certified live emergency-alert service.</div>',
+        '<div class="context-box"><strong>Historical monitoring role</strong><br>Use the calendar to focus attention on unusual activity and historically persistent periods. The application is for historical scientific review and research support, not a certified live emergency-alert service.</div>',
         unsafe_allow_html=True,
     )
-
-filter_col1, filter_col2 = st.columns([1.25, 1.75])
-with filter_col1:
-    date_selection = st.date_input(
-        "Calendar date range",
-        value=(year_min_date.date(), year_max_date.date()),
-        min_value=year_min_date.date(),
-        max_value=year_max_date.date(),
-        key=f"calendar_date_range_{selected_year}",
-        help="Choose the inclusive start and end dates within the selected year.",
-    )
-if isinstance(date_selection, (tuple, list)):
-    if len(date_selection) == 2:
-        start_value = date_selection[0] if date_selection[0] is not None else year_min_date.date()
-        end_value = date_selection[1] if date_selection[1] is not None else year_max_date.date()
-        selected_date_start = pd.Timestamp(start_value).normalize()
-        selected_date_end = pd.Timestamp(end_value).normalize()
-    elif len(date_selection) == 1:
-        selected_date_start = selected_date_end = pd.Timestamp(date_selection[0]).normalize()
-    else:
-        selected_date_start, selected_date_end = year_min_date, year_max_date
-else:
-    selected_date_start = selected_date_end = pd.Timestamp(date_selection).normalize()
-
-with filter_col2:
-    available_sectors = sorted(selected_year_data["sector"].dropna().astype(str).str.upper().unique().tolist())
-    selected_sectors = st.multiselect(
-        "Sectors to include",
-        options=available_sectors,
-        default=available_sectors,
-        key=f"calendar_sectors_{selected_year}",
-        help="Choose one or more of the 25 project sectors. All available sectors are selected by default.",
-    )
-
-calendar_mask = (
-    science["acq_date"].dt.normalize().between(selected_date_start, selected_date_end)
-    & science["acq_date"].dt.year.eq(selected_year)
-    & science["sector"].isin(selected_sectors)
-)
-calendar_filtered_science = science.loc[calendar_mask].copy()
 
 calendar_figure = build_burning_activity_calendar(
     science,
     selected_year,
     calendar_metric,
-    date_start=selected_date_start,
-    date_end=selected_date_end,
-    selected_sectors=selected_sectors,
 )
+
 st.plotly_chart(
     calendar_figure,
     use_container_width=True,
     config={"displayModeBar": False, "responsive": True},
 )
-st.caption(
-    CALENDAR_METRICS[calendar_metric]["description"]
-    + " Raw MODIS and VIIRS counts are deliberately shown separately; do not add them together as if they were directly interchangeable."
-)
-
-# Export the exact sector-day records represented by the calendar filters.
-st.markdown("**Download the selected sector-day data**")
-if calendar_filtered_science.empty:
-    st.info("No rows match the current date and sector selection, so there is nothing to export.")
-else:
-    export_bytes = calendar_filtered_science.to_csv(index=False).encode("utf-8-sig")
-    export_filename = (
-        f"fire_harmonizer_sector_day_{selected_year}_"
-        f"{selected_date_start:%Y%m%d}_{selected_date_end:%Y%m%d}.csv"
-    )
-    st.download_button(
-        label="Download filtered sector-day CSV",
-        data=export_bytes,
-        file_name=export_filename,
-        mime="text/csv",
-        help="Exports the filtered M7 sector-day science records, not the original point-level FIRMS hotspot archive.",
-    )
-    st.caption(
-        f"{len(calendar_filtered_science):,} sector-day row(s) included. This export contains the prepared M7 table fields; it is not a point-level list of every original FIRMS detection."
-    )
-
-# Show sensor-specific totals alongside anomaly evidence.
-count_col1, count_col2 = st.columns(2)
-for column_name, container, label in [
-    ("modis_count", count_col1, "MODIS hotspot detections"),
-    ("viirs_count", count_col2, "Suomi NPP VIIRS hotspot detections"),
-]:
-    with container:
-        if column_name in calendar_filtered_science.columns:
-            count_values = pd.to_numeric(calendar_filtered_science[column_name], errors="coerce")
-            total_value = count_values.sum(min_count=1)
-            display_value = f"{total_value:,.0f}" if pd.notna(total_value) else "Unavailable"
-            st.metric(label, display_value)
-        else:
-            st.metric(label, "Field unavailable")
 
 summary = annual_monitoring_summary(
     science,
     events,
     selected_year,
-    date_start=selected_date_start,
-    date_end=selected_date_end,
-    selected_sectors=selected_sectors,
 )
 
 s1, s2, s3, s4 = st.columns(4)
+
 with s1:
     st.markdown(
-        f'<div class="kpi-card"><div class="kpi-label">C-active sector-days</div><div class="kpi-value">{summary["active_sector_days"]:,}</div><div class="kpi-note">C ≥ {ANOMALY_THRESHOLD:.0f} in selected filters</div></div>',
+        f'<div class="kpi-card"><div class="kpi-label">C-active sector-days</div><div class="kpi-value">{summary["active_sector_days"]:,}</div><div class="kpi-note">C ≥ {ANOMALY_THRESHOLD:.0f} anomaly evidence</div></div>',
         unsafe_allow_html=True,
     )
+
 with s2:
     peak_c = summary["peak_c"]
     peak_c_text = f"{peak_c:.2f}σ" if np.isfinite(peak_c) else "—"
     st.markdown(
-        f'<div class="kpi-card"><div class="kpi-label">Peak activity anomaly</div><div class="kpi-value">{peak_c_text}</div><div class="kpi-note">Maximum C in selected records</div></div>',
+        f'<div class="kpi-card"><div class="kpi-label">Peak activity anomaly</div><div class="kpi-value">{peak_c_text}</div><div class="kpi-note">Maximum C in {selected_year}</div></div>',
         unsafe_allow_html=True,
     )
+
 with s3:
     peak_date = summary["peak_date"]
     st.markdown(
         f'<div class="kpi-card"><div class="kpi-label">Peak date</div><div class="kpi-value">{safe_date_text(peak_date)}</div><div class="kpi-note">Highest C sector-day</div></div>',
         unsafe_allow_html=True,
     )
+
 with s4:
     st.markdown(
-        f'<div class="kpi-card"><div class="kpi-label">Reconstructed events</div><div class="kpi-value">{int(summary["event_count"]):,}</div><div class="kpi-note">M8 events overlapping selected window/sectors</div></div>',
+        f'<div class="kpi-card"><div class="kpi-label">Reconstructed events</div><div class="kpi-value">{int(summary["event_count"]):,}</div><div class="kpi-note">M8 events overlapping {selected_year}</div></div>',
         unsafe_allow_html=True,
     )
 
-# Selected month vs same month/day window in complete previous years.
-st.markdown('<div class="section-kicker">Monthly Historical Comparison</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="section-description">Compare the selected month’s sensor-specific hotspot counts with the median for the same month and day range in earlier years. Only complete matching sector-day windows are included.</div>',
-    unsafe_allow_html=True,
+st.caption(
+    CALENDAR_METRICS[calendar_metric]["description"]
+    + " Missing values are left missing where the source table has no value; a missing cell is not proof that no burning occurred."
 )
-month_options = list(range(1, 13))
-default_month = int(selected_date_end.month)
-month_col, month_note_col = st.columns([0.8, 2.2])
-with month_col:
-    selected_comparison_month = st.selectbox(
-        "Month to compare",
-        month_options,
-        index=month_options.index(default_month),
-        format_func=lambda month: pd.Timestamp(year=2000, month=month, day=1).strftime("%B"),
-        key=f"comparison_month_{selected_year}",
-    )
-monthly_comparison, comparison_note = build_monthly_sensor_comparison(
-    science,
-    selected_year,
-    selected_comparison_month,
-    selected_sectors,
-    selected_date_start,
-    selected_date_end,
-)
-with month_note_col:
-    st.caption(comparison_note)
-if not monthly_comparison.empty:
-    monthly_figure = build_monthly_sensor_comparison_figure(monthly_comparison)
-    if len(monthly_figure.data) > 0:
-        st.plotly_chart(
-            monthly_figure,
-            use_container_width=True,
-            config={"displayModeBar": False, "responsive": True},
-        )
-    st.dataframe(monthly_comparison, use_container_width=True, hide_index=True)
-else:
-    st.info(comparison_note)
 
 
 # ============================================================
@@ -2568,7 +2264,7 @@ with st.expander("Advanced Scientific Filters", expanded=False):
 
 st.markdown('<div class="section-kicker">Investigate Specific Events</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="section-description">The calendar above identifies when activity is concentrated. Start with the five largest reconstructed events overlapping the selected date window and selected sectors, then open the 5×5 footprint, lifecycle, and deep evidence only when useful.</div>',
+    '<div class="section-description">The calendar above identifies when activity is concentrated. Start with the five largest reconstructed events in that same year, then open the map-like 5×5 footprint, lifecycle, and deep evidence only when useful.</div>',
     unsafe_allow_html=True,
 )
 
@@ -2578,9 +2274,6 @@ filtered_events = filter_events_for_year_and_controls(
     min_duration,
     min_footprint,
     min_peak_c,
-    date_start=selected_date_start,
-    date_end=selected_date_end,
-    selected_sectors=selected_sectors,
 )
 
 featured_events = rank_largest_events(filtered_events).head(5).copy()
