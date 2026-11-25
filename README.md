@@ -4,7 +4,6 @@
 
 **Fire Harmonizer — The Horizon Watchers** is a scientific data-processing and visualization system built around NASA FIRMS active-fire observations from **MODIS** and **VIIRS**.
 
-The project addresses the **NASA Space Apps Challenge 2026** challenge **“Harmonization of MODIS and VIIRS Hot Spots”** by turning two sensor streams into a common, historically interpretable analytical framework.
 
 Instead of treating a satellite fire detection as a complete description of a fire, Fire Harmonizer asks a harder question:
 
