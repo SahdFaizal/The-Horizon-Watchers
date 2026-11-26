@@ -671,10 +671,6 @@ The project is therefore structured as an **evidence pipeline**, not simply as a
 
 # Challenge alignment
 
-Fire Harmonizer was designed for the NASA Space Apps Challenge 2026 problem:
-
-**Harmonization of MODIS and VIIRS Hot Spots**
-
 The project responds by providing:
 
 - a common historical representation of MODIS and VIIRS active-fire activity;
@@ -690,16 +686,7 @@ The project responds by providing:
 
 The emphasis is on **interpretability, traceability, and responsible use of Earth-observation evidence**.
 
----
 
-# Team
-
-## The Horizon Watchers
-
-**Project:** Fire Harmonizer  
-**Challenge:** NASA Space Apps Challenge 2026 — Harmonization of MODIS and VIIRS Hot Spots
-
----
 
 # Data sources
 
@@ -710,52 +697,6 @@ Fire Information for Resource Management System (FIRMS):
 https://firms.modaps.eosdis.nasa.gov/
 
 FIRMS provides the active-fire observation records used as the primary data foundation of this project.
-
-## NASA Space Apps Challenge
-
-https://www.spaceappschallenge.org/
-
-Project challenge context:
-
-https://www.spaceappschallenge.org/2026/challenges/harmonization-of-modis-and-viirs-hot-spots/
-
----
-
-# License and data note
-
-Add the final repository license here before publishing.
-
-Large raw observation archives and private credentials should not be committed to the public repository.
-
-Recommended public-release pattern:
-
-```text
-CODE
-+
-DERIVED / REQUIRED APP OUTPUTS
-+
-DOCUMENTATION
-+
-VISUALS
-```
-
-rather than committing every large local acquisition file.
-
----
-
-# Project status
-
-The scientific and application architecture currently includes:
-
-- M1–M6 historical foundation;
-- M7 multi-evidence science;
-- M8 reconstructed Fire Events;
-- M9 Progressive Disclosure observatory;
-- M10 offline scientific plates.
-
-The public repository should be frozen around the same code/output version used for the final application, screenshots, demonstration video, and NASA submission materials.
-
----
 
 ## Fire Harmonizer
 
